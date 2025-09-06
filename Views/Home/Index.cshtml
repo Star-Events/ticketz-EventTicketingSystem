@@ -1,8 +1,54 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model IEnumerable<EventTicketingSystem.Models.EventCardVm>
+@{
+    ViewData["Title"] = "Events";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="p-4 p-md-5 mb-4 bg-white rounded-3 shadow-lg mt-4">
+    <div class="row align-items-center g-4">
+         <div class="col-md-12">
+            <div class="p-3 bg-dark text-white rounded-3">
+                <div class="small text-uppercase opacity-75">Promo</div>
+                <div class="h5 my-2">Use code <strong>ROCK10</strong> for 10% off</div>
+                <div class="small opacity-75">Limited time offer.</div>
+            </div>
+        </div>
+        <div class="col-md-12 mt-4">
+            <h1 class="display-6 fw-bold mb-2">Find your next event</h1>
+            <p class="text-muted mb-4">Browse concerts, theatre, and cultural shows near you.</p>
+            <form class="row g-2" method="get" action="/events">
+                <div class="col-12 col-md-6">
+                    <input class="form-control form-control-md" name="q" placeholder="Search events..." />
+                </div>
+                <div class="col-6 col-md-3">
+                    <select class="form-select form-select-md" name="category">
+                        <option value="">All Categories</option>
+                        <option>Concerts</option>
+                        <option>Theatre</option>
+                        <option>Cultural</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <button class="btn btn-dark btn-md w-100" type="submit">Search</button>
+                </div>
+            </form>
+        </div>
+       
+    </div>
+</section>
+
+<section>
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="h4 m-0">Upcoming Events</h2>
+        <a href="/events" class="small text-decoration-none">View all</a>
+    </div>
+
+    <div class="row g-3">
+        @foreach (var e in Model)
+        {
+           <div class="col-12 col-md-6">
+                @await Component.InvokeAsync("EventCard", new { model = e })
+            </div>
+        }
+    </div>
+</section>
+

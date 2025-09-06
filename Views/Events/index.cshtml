@@ -1,0 +1,53 @@
+@model EventTicketingSystem.Models.PagedResult<EventTicketingSystem.Models.EventCardVm>
+@{
+    ViewData["Title"] = "All Events";
+}
+
+<section class="mb-4 mt-4">
+    <h1 class="h3 mb-3">All Events</h1>
+    <form method="get" class="row g-2">
+        <div class="col-12 col-md-6">
+            <input class="form-control" name="q" value="@Model.Q" placeholder="Search events..." />
+        </div>
+        <div class="col-6 col-md-3">
+            <button class="btn btn-dark w-100" type="submit">Search</button>
+        </div>
+    </form>
+</section>
+
+
+<section class="row g-3">
+@foreach (var e in Model.Items)
+{
+    <div class="col-12 col-md-6">
+         @await Component.InvokeAsync("EventCard", new { model = e })
+    </div>
+}
+</section>
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-4">
+        <ul class="pagination">
+            @{
+                var prevPage = Model.Page - 1;
+                var nextPage = Model.Page + 1;
+            }
+
+            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                <a class="page-link" href="?page=@prevPage&pageSize=@Model.PageSize&q=@Model.Q">Previous</a>
+            </li>
+
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.Page ? "active" : "")">
+                    <a class="page-link" href="?page=@i&pageSize=@Model.PageSize&q=@Model.Q">@i</a>
+                </li>
+            }
+
+            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                <a class="page-link" href="?page=@nextPage&pageSize=@Model.PageSize&q=@Model.Q">Next</a>
+            </li>
+        </ul>
+    </nav>
+}
