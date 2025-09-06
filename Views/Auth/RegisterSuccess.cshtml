@@ -1,9 +1,16 @@
 @{
     ViewData["Title"] = "Registration Success";
 }
-<div class="alert alert-success mt-3">
-    <h2 class="h5 mb-2">Thanks for registering!</h2>
-    <p>@(TempData["RegisterMessage"] ?? "Your form was submitted successfully.")</p>
-    <p><em>Next step: we will connect PostgreSQL + Identity so this creates a real user and signs you in.</em></p>
+<div class="d-flex justify-content-center align-items-center" style="min-height:60vh;">
+  <div class="card shadow-lg border-0" style="max-width: 520px; width:100%;">
+    <div class="card-body p-4 text-center">
+      <h2 class="h4 mb-3">🎉 Account created</h2>
+      <p class="text-muted mb-4">
+        @(TempData["RegisterMessage"] ?? "Your account was created successfully.")
+      </p>
+      <div class="d-flex justify-content-center gap-2">
+        <a class="btn btn-outline-secondary" asp-controller="Auth" asp-action="Login">Go to Login</a>
+      </div>
+    </div>
+  </div>
 </div>
-<a class="btn btn-dark" asp-controller="Home" asp-action="Index">Go to Events</a>
