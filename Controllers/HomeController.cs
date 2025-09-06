@@ -4,6 +4,8 @@ using EventTicketingSystem.Models;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using EventTicketingSystem.Services;
+using EventTicketingSystem.Data;
+using Npgsql;
 
 
 namespace EventTicketingSystem.Controllers;
@@ -11,11 +13,25 @@ namespace EventTicketingSystem.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly DbHelper _db;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(DbHelper db, ILogger<HomeController> logger)
     {
         _logger = logger;
+        _db = db;
     }
+
+    // GET: /Home/TestDb
+    public IActionResult TestDb()
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
+
+        using var cmd = new NpgsqlCommand("SELECT version();", conn);
+        var version = cmd.ExecuteScalar()?.ToString();
+
+        return Content($"Connected to PostgreSQL: {version}");
+    }    
 
     // GET: /
     public IActionResult Index()
