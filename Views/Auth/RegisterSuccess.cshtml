@@ -1,0 +1,9 @@
+@{
+    ViewData["Title"] = "Registration Success";
+}
+<div class="alert alert-success mt-3">
+    <h2 class="h5 mb-2">Thanks for registering!</h2>
+    <p>@(TempData["RegisterMessage"] ?? "Your form was submitted successfully.")</p>
+    <p><em>Next step: we will connect PostgreSQL + Identity so this creates a real user and signs you in.</em></p>
+</div>
+<a class="btn btn-dark" asp-controller="Home" asp-action="Index">Go to Events</a>
