@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using EventTicketingSystem.Models;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using EventTicketingSystem.Services;
+
 
 namespace EventTicketingSystem.Controllers;
 
@@ -18,13 +20,9 @@ public class HomeController : Controller
     // GET: /
     public IActionResult Index()
     {
-        var events = new List<EventCardVm>
-        {
-            new EventCardVm { Title = "Rock Night Colombo", DateTime = "Sun 12 Oct 2025, 7:00 PM", Venue = "Nelum Pokuna", Price = "LKR 5,000", Availability = "120 / 800" },
-            new EventCardVm { Title = "Classical Evening",   DateTime = "Mon 20 Oct 2025, 6:30 PM", Venue = "BMICH",        Price = "LKR 3,500", Availability = "34 / 500" }
-        };
+        var top2 = EventListService.GetAll().Take(2).ToList();
+        return View(top2);
 
-        return View(events);
     }
 
     public IActionResult Privacy()

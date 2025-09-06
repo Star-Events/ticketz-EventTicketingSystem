@@ -22,7 +22,7 @@
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <!-- Events always visible -->
                 <li class="nav-item">
-                    <a class="nav-link" asp-controller="Home" asp-action="Index">Events</a>
+                    <a class="nav-link" asp-controller="Events" asp-action="Index">Events</a>
                 </li>
 
                 @if (User.Identity?.IsAuthenticated ?? false)
