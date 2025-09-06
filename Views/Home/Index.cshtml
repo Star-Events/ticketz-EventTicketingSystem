@@ -3,7 +3,7 @@
     ViewData["Title"] = "Events";
 }
 
-<section class="p-4 p-md-5 mb-4 bg-white rounded-3 shadow-sm">
+<section class="p-4 p-md-5 mb-4 bg-white rounded-3 shadow-lg mt-4">
     <div class="row align-items-center g-4">
          <div class="col-md-12">
             <div class="p-3 bg-dark text-white rounded-3">
@@ -12,7 +12,7 @@
                 <div class="small opacity-75">Limited time offer.</div>
             </div>
         </div>
-        <div class="col-md-12">
+        <div class="col-md-12 mt-4">
             <h1 class="display-6 fw-bold mb-2">Find your next event</h1>
             <p class="text-muted mb-4">Browse concerts, theatre, and cultural shows near you.</p>
             <form class="row g-2" method="get" action="/events">
@@ -45,21 +45,8 @@
     <div class="row g-3">
         @foreach (var e in Model)
         {
-            <div class="col-12 col-md-6">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-1">
-                            <h3 class="h5 card-title mb-0">@e.Title</h3>
-                            <span class="badge text-bg-light">Available: @e.Availability</span>
-                        </div>
-                        <div class="text-muted small mb-2">@e.DateTime • @e.Venue</div>
-                        <div class="fw-semibold mb-3">@e.Price</div>
-                        <div class="d-flex gap-2">
-                            <a class="btn btn-outline-secondary" href="/events/details/1">View Details</a>
-                            <a class="btn btn-dark" href="/checkout">Book Now</a>
-                        </div>
-                    </div>
-                </div>
+           <div class="col-12 col-md-6">
+                @await Component.InvokeAsync("EventCard", new { model = e })
             </div>
         }
     </div>
