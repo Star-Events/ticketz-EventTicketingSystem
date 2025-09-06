@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using EventTicketingSystem.Data;
@@ -98,8 +101,99 @@ namespace EventTicketingSystem.Controllers
             }
         }
 
+
+        // GET: /Auth/Login
+        [HttpGet]
+        public IActionResult Login(string? returnUrl = null)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+            return View(new LoginVm());
+        }
+
+        // POST: /Auth/Login
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(LoginVm vm, string? returnUrl = null)
+        {
+            if (!ModelState.IsValid) return View(vm);
+
+            using var conn = _db.GetConnection();
+            await conn.OpenAsync();
+
+            const string sql = @"
+                SELECT user_id, full_name, email, password_hash, password_salt, role, status
+                FROM users
+                WHERE email = @em
+                LIMIT 1;";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("em", vm.Email);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+            {
+                ModelState.AddModelError(string.Empty, "Invalid email or password.");
+                return View(vm);
+            }
+
+            var userId = reader.GetGuid(0);
+            var fullName = reader.GetString(1);
+            var email = reader.GetString(2);
+            var hash = reader.GetString(3);
+            var salt = reader.GetString(4);
+            var role = reader.GetString(5);
+            var status = reader.GetString(6);
+
+            if (!PasswordHasher.Verify(vm.Password, hash, salt))
+            {
+                ModelState.AddModelError(string.Empty, "Invalid email or password.");
+                return View(vm);
+            }
+
+            if (!string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError(string.Empty, "Your account is not active.");
+                return View(vm);
+            }
+
+            // Build claims identity (includes Role so User.IsInRole(...) works)
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.Name, fullName),
+                new Claim(ClaimTypes.Email, email),
+                new Claim(ClaimTypes.Role, role)
+            };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            var props = new AuthenticationProperties { IsPersistent = vm.RememberMe };
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
+
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction("Index", "Home");
+        }
+
         // GET: /Auth/RegisterSuccess
         [HttpGet]
         public IActionResult RegisterSuccess() => View();
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction("Login", "Auth"); // 👈 redirect to Login page
+        }
+
+        // Optional: /Auth/AccessDenied
+        [HttpGet]
+        public IActionResult AccessDenied() => Content("Access denied");
+
     }
 }
