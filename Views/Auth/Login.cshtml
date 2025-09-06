@@ -1,0 +1,49 @@
+@model EventTicketingSystem.Models.LoginVm
+@{
+    ViewData["Title"] = "Login";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+}
+
+<div class="d-flex justify-content-center align-items-center" style="min-height:80vh;">
+  <div class="card shadow-lg border-0" style="max-width: 480px; width:100%;">
+    <div class="card-body p-4">
+      <h1 class="h4 mb-4 text-center">Welcome back</h1>
+
+      <form asp-action="Login" method="post" novalidate>
+        @Html.AntiForgeryToken()
+
+        @if (!string.IsNullOrEmpty(returnUrl)) {
+          <input type="hidden" name="returnUrl" value="@returnUrl" />
+        }
+
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="mb-3">
+          <label asp-for="Email" class="form-label"></label>
+          <input asp-for="Email" class="form-control" />
+          <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+          <label asp-for="Password" class="form-label"></label>
+          <input asp-for="Password" class="form-control" />
+          <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+
+        <div class="form-check mb-3">
+          <input asp-for="RememberMe" class="form-check-input" />
+          <label asp-for="RememberMe" class="form-check-label"></label>
+        </div>
+
+        <div class="d-grid gap-2">
+          <button class="btn btn-dark" type="submit">Login</button>
+          <a class="btn btn-outline-secondary" asp-controller="Auth" asp-action="Register">Create account</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+  <partial name="_ValidationScriptsPartial" />
+}

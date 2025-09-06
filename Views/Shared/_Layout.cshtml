@@ -74,6 +74,7 @@
             <div class="d-flex gap-2">
                 @if (User.Identity?.IsAuthenticated ?? false)
                 {
+                   
                     <span class="navbar-text me-2">Hello, @User.Identity.Name!</span>
                     <form method="post" asp-controller="Auth" asp-action="Logout">
                         <button class="btn btn-outline-dark" type="submit">Logout</button>
