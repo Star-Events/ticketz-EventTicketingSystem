@@ -1,5 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,85 +10,122 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/EventTicketingSystem.styles.css" asp-append-version="true" />
 </head>
+
 <body>
     <header class="border-bottom bg-white">
-        <nav class="navbar navbar-expand-lg container">
-            <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">StarEvents</a>
-             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                data-bs-target="#mainNav" aria-controls="mainNav"
-                aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="mainNav">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <!-- Events always visible -->
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Events" asp-action="Index">Events</a>
-                </li>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container">
+                <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">StarEvents</a>
 
-                @if (User.Identity?.IsAuthenticated ?? false)
-                {
-                    if (User.IsInRole("Customer"))
-                    {
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                    aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="mainNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+                        <!-- Always visible -->
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Bookings" asp-action="My">My Bookings</a>
+                            <a class="nav-link" asp-controller="Events" asp-action="Index">Events</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Tickets" asp-action="Wallet">Tickets</a>
+                            <a class="nav-link" asp-controller="Home" asp-action="About">About</a>
                         </li>
-                    }
-                    else if (User.IsInRole("Organizer"))
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="OrgEvents" asp-action="Index">My Events</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="OrgReports" asp-action="Index">Reports</a>
-                        </li>
-                    }
-                    else if (User.IsInRole("Admin"))
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Admin" asp-action="Dashboard">Dashboard</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="AdminUsers" asp-action="Index">Users</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="AdminVenues" asp-action="Index">Venues</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="AdminDiscounts" asp-action="Index">Discounts</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="AdminReports" asp-action="Index">Reports</a>
-                        </li>
-                    }
-                }
-                else
-                {
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="Home" asp-action="About">About</a>
-                    </li>
-                }
-            </ul>
-            <div class="d-flex gap-2">
-                @if (User.Identity?.IsAuthenticated ?? false)
-                {
-                   
-                    <span class="navbar-text me-2">Hello, @User.Identity.Name!</span>
-                    <form method="post" asp-controller="Auth" asp-action="Logout">
-                        <button class="btn btn-outline-dark" type="submit">Logout</button>
-                    </form>
-                }
-                else
-                {
-                    <a class="btn btn-outline-dark" asp-controller="Auth" asp-action="Login">Login</a>
-                    <a class="btn btn-dark" asp-controller="Auth" asp-action="Register">Register</a>
-                }
+
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            if (User.IsInRole("Customer"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Bookings" asp-action="My">My Bookings</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Tickets" asp-action="Wallet">Tickets</a>
+                                </li>
+                            }
+                            else if (User.IsInRole("Organizer"))
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="orgMenu" role="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        My Events
+                                    </a>
+                                    <ul class="dropdown-menu" aria-labelledby="orgMenu">
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="OrgEvents" asp-action="Index">My Events</a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="OrgEvents" asp-action="Create">Create
+                                                Event</a>
+                                        </li>
+                                    </ul>
+                                </li>
+                            }
+                            else if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="adminMenu" role="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        Admin
+                                    </a>
+                                    <ul class="dropdown-menu" aria-labelledby="adminMenu">
+                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Dashboard">Dashboard</a>
+                                        </li>
+                                        <li><a class="dropdown-item" asp-controller="AdminUsers" asp-action="Index">Users</a>
+                                        </li>
+                                        <li><a class="dropdown-item" asp-controller="AdminVenues" asp-action="Index">Venues</a>
+                                        </li>
+                                        <li><a class="dropdown-item" asp-controller="AdminDiscounts"
+                                                asp-action="Index">Discounts</a></li>
+                                        <li><a class="dropdown-item" asp-controller="AdminReports"
+                                                asp-action="Index">Reports</a></li>
+                                    </ul>
+                                </li>
+                            }
+                        }
+                    </ul>
+
+                    <div class="d-flex align-items-center gap-2">
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            <!-- Optional: profile dropdown instead of plain text -->
+                            <div class="dropdown">
+                                <button class="btn btn-outline-dark dropdown-toggle" type="button" id="profileMenu"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                    @User.Identity!.Name
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileMenu">
+                                    <li>
+                                        <span class="dropdown-item-text text-muted">
+                                            Role:
+                                            @(User.IsInRole("Organizer") ? "Organizer" :
+                                                                                    User.IsInRole("Admin") ? "Admin" : "Customer")
+                                        </span>
+                                    </li>
+                                    <li>
+                                        <hr class="dropdown-divider" />
+                                    </li>
+                                    <!-- add Profile/Settings links later if you build them -->
+                                    <li>
+                                        <form method="post" asp-controller="Auth" asp-action="Logout" class="px-3">
+                                            @Html.AntiForgeryToken()
+                                            <button class="btn btn-link p-0">Logout</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        }
+                        else
+                        {
+                            <a class="btn btn-outline-dark" asp-controller="Auth" asp-action="Login">Login</a>
+                            <a class="btn btn-dark" asp-controller="Auth" asp-action="Register">Register</a>
+                        }
+                    </div>
+                </div>
             </div>
-        </div>
         </nav>
+
     </header>
     <div class="container">
         <main role="main" class="pb-3">
@@ -105,4 +143,5 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
+
 </html>

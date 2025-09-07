@@ -25,14 +25,24 @@ namespace EventTicketingSystem.Services
             var total = Convert.ToInt32(countCmd.ExecuteScalar());
 
             // page
+            // using var cmd = new NpgsqlCommand($@"
+            //     SELECT e.event_id, e.title, e.starts_at, e.ticket_price, e.total_tickets, e.sold_count,
+            //            v.name AS venue_name
+            //     FROM event e
+            //     JOIN venue v ON v.venue_id = e.venue_id
+            //     {where}
+            //     ORDER BY e.starts_at ASC
+            //     LIMIT @ps OFFSET @off;", conn);
+
             using var cmd = new NpgsqlCommand($@"
-                SELECT e.event_id, e.title, e.starts_at, e.ticket_price, e.total_tickets, e.sold_count,
-                       v.name AS venue_name
-                FROM event e
-                JOIN venue v ON v.venue_id = e.venue_id
-                {where}
-                ORDER BY e.starts_at ASC
-                LIMIT @ps OFFSET @off;", conn);
+                    SELECT e.event_id, e.title, e.starts_at, e.ticket_price, e.total_tickets, e.sold_count,
+                        v.name AS venue_name, COALESCE(ec.name, 'Uncategorized') AS category_name
+                    FROM event e
+                    JOIN venue v ON v.venue_id = e.venue_id
+                    LEFT JOIN event_category ec ON ec.category_id = e.category_id
+                    {where}
+                    ORDER BY e.starts_at ASC
+                    LIMIT @ps OFFSET @off;", conn);
 
             if (!string.IsNullOrWhiteSpace(q)) cmd.Parameters.AddWithValue("q", $"%{q}%");
             cmd.Parameters.AddWithValue("ps", pageSize);
@@ -61,15 +71,20 @@ namespace EventTicketingSystem.Services
         {
             using var conn = _db.GetConnection();
             conn.Open();
+
+
             using var cmd = new NpgsqlCommand(@"
-                SELECT e.event_id, e.title, COALESCE(e.description,''), COALESCE(e.category,''),
-                       e.starts_at, e.ticket_price, e.total_tickets, e.sold_count,
-                       v.name AS venue_name, u.full_name AS organizer_name
+                SELECT e.event_id, e.title, COALESCE(e.description,''), 
+                    COALESCE(ec.name,'Uncategorized') AS category_name,
+                    e.starts_at, e.ticket_price, e.total_tickets, e.sold_count,
+                    v.name AS venue_name, u.full_name AS organizer_name
                 FROM event e
                 JOIN venue v ON v.venue_id = e.venue_id
                 JOIN users u ON u.user_id = e.organizer_id
+                LEFT JOIN event_category ec ON ec.category_id = e.category_id
                 WHERE e.event_id = @id
                 LIMIT 1;", conn);
+
             cmd.Parameters.AddWithValue("id", id);
 
             using var r = cmd.ExecuteReader();
