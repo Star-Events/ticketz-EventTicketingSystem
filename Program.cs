@@ -1,5 +1,6 @@
 
 using EventTicketingSystem.Data;
+using EventTicketingSystem.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 
@@ -20,6 +21,8 @@ builder.Services
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
     });
+
+builder.Services.AddSingleton<EventReadService>();
 
 builder.Services.AddAuthorization();
 

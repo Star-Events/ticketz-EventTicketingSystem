@@ -1,0 +1,30 @@
+@model EventTicketingSystem.Models.EventDetailsVm
+@{
+    ViewData["Title"] = Model.Title;
+}
+<div class="container py-4">
+  <div class="row">
+    <div class="col-lg-8">
+      <h1 class="h3 mb-2">@Model.Title</h1>
+      <div class="text-muted mb-3">
+        @Model.StartsAt.ToString("dddd, dd MMM yyyy • h:mm tt") — @Model.Venue
+        <br />
+        Category: <span class="badge text-bg-light">@Model.Category</span>
+      </div>
+      <p class="mb-4">@Model.Description</p>
+    </div>
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="mb-2">Price</div>
+          <div class="h4">LKR @Model.TicketPrice.ToString("N0")</div>
+          <div class="small text-muted mb-3">
+            Available: @(Model.TotalTickets - Model.SoldCount) / @Model.TotalTickets
+          </div>
+          <a class="btn btn-dark w-100" href="#">Book Now</a> @* wire later *@
+          <div class="small text-muted mt-3">Organizer: @Model.OrganizerName</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
