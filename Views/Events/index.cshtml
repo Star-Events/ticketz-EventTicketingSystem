@@ -1,53 +1,73 @@
-@model EventTicketingSystem.Models.PagedResult<EventTicketingSystem.Models.EventCardVm>
+@model IEnumerable<EventTicketingSystem.Models.EventListItemVm>
 @{
     ViewData["Title"] = "All Events";
+    int page = (int)ViewBag.Page;
+    int pageSize = (int)ViewBag.PageSize;
+    int totalPages = (int)ViewBag.TotalPages;
+    string? q = ViewBag.Q as string;
 }
 
 <section class="mb-4 mt-4">
-    <h1 class="h3 mb-3">All Events</h1>
-    <form method="get" class="row g-2">
-        <div class="col-12 col-md-6">
-            <input class="form-control" name="q" value="@Model.Q" placeholder="Search events..." />
-        </div>
-        <div class="col-6 col-md-3">
-            <button class="btn btn-dark w-100" type="submit">Search</button>
-        </div>
-    </form>
+  <h1 class="h3 mb-3">All Events</h1>
+  <form method="get" class="row g-2">
+    <div class="col-12 col-md-6">
+      <input class="form-control" name="q" value="@q" placeholder="Search events..." />
+    </div>
+    <div class="col-6 col-md-3">
+      <select name="pageSize" class="form-select" onchange="this.form.submit()">
+        <option value="6" selected="@(pageSize==6)">6 per page</option>
+        <option value="8" selected="@(pageSize==8)">8 per page</option>
+        <option value="12" selected="@(pageSize==12)">12 per page</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <button class="btn btn-dark w-100" type="submit">Search</button>
+    </div>
+  </form>
 </section>
 
-
 <section class="row g-3">
-@foreach (var e in Model.Items)
+@foreach (var e in Model)
 {
-    <div class="col-12 col-md-6">
-         @await Component.InvokeAsync("EventCard", new { model = e })
+  <div class="col-12 col-md-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <h3 class="h5 card-title mb-0">@e.Title</h3>
+          <span class="badge text-bg-light">Sold: @e.Availability</span>
+        </div>
+        <div class="text-muted small mb-2">@e.When • @e.Venue</div>
+        <div class="fw-semibold mb-3">@e.Price</div>
+        <div class="mt-auto d-flex gap-2">
+          <a class="btn btn-outline-secondary" asp-controller="Events" asp-action="Details" asp-route-id="@e.EventId">View Details</a>
+          <a class="btn btn-dark" href="#">Book Now</a> @* will wire later *@
+        </div>
+      </div>
     </div>
+  </div>
 }
 </section>
 
-@if (Model.TotalPages > 1)
+@if (totalPages > 1)
 {
-    <nav class="mt-4">
-        <ul class="pagination">
-            @{
-                var prevPage = Model.Page - 1;
-                var nextPage = Model.Page + 1;
-            }
-
-            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
-                <a class="page-link" href="?page=@prevPage&pageSize=@Model.PageSize&q=@Model.Q">Previous</a>
-            </li>
-
-            @for (int i = 1; i <= Model.TotalPages; i++)
-            {
-                <li class="page-item @(i == Model.Page ? "active" : "")">
-                    <a class="page-link" href="?page=@i&pageSize=@Model.PageSize&q=@Model.Q">@i</a>
-                </li>
-            }
-
-            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
-                <a class="page-link" href="?page=@nextPage&pageSize=@Model.PageSize&q=@Model.Q">Next</a>
-            </li>
-        </ul>
-    </nav>
+  <nav class="mt-4">
+    <ul class="pagination">
+      @{
+        var prev = page - 1;
+        var next = page + 1;
+      }
+      <li class="page-item @(page==1?"disabled":"")">
+        <a class="page-link" href="?page=@prev&pageSize=@pageSize&q=@q">Previous</a>
+      </li>
+      @for (int i=1; i<=totalPages; i++)
+      {
+        <li class="page-item @(i==page?"active":"")">
+          <a class="page-link" href="?page=@i&pageSize=@pageSize&q=@q">@i</a>
+        </li>
+      }
+      <li class="page-item @(page==totalPages?"disabled":"")">
+        <a class="page-link" href="?page=@next&pageSize=@pageSize&q=@q">Next</a>
+      </li>
+    </ul>
+  </nav>
 }
