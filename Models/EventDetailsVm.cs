@@ -12,5 +12,7 @@ namespace EventTicketingSystem.Models
         public int TotalTickets { get; set; }
         public int SoldCount { get; set; }
         public string OrganizerName { get; set; } = "";
+        public string Status { get; set; } = "Upcoming"; // Upcoming | Live | Completed | Cancelled
+        public bool CanBuy => string.Equals(Status, "Live", StringComparison.OrdinalIgnoreCase);
     }
 }
