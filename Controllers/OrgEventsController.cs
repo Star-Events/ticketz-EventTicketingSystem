@@ -15,6 +15,168 @@ namespace EventTicketingSystem.Controllers
         private readonly DbHelper _db;
         public OrgEventsController(DbHelper db) { _db = db; }
 
+        // ---------- EDIT (GET) ----------
+        [HttpGet]
+        public IActionResult Edit(int id)
+        {
+            var organizerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            using var conn = _db.GetConnection();
+            conn.Open();
+
+            using var cmd = new NpgsqlCommand(@"
+                SELECT e.event_id, e.title, COALESCE(e.description,''), e.category_id, e.starts_at,
+                       e.venue_id, e.ticket_price, e.total_tickets
+                FROM event e
+                WHERE e.event_id = @id AND e.organizer_id = @org
+                LIMIT 1;", conn);
+            cmd.Parameters.AddWithValue("id", id);
+            cmd.Parameters.AddWithValue("org", organizerId);
+
+            using var r = cmd.ExecuteReader();
+            if (!r.Read()) return NotFound();
+
+            var vm = new CreateEventVm
+            {
+                Title = r.GetString(1),
+                Description = r.GetString(2),
+                CategoryId = r.IsDBNull(3) ? 0 : r.GetInt32(3),
+                StartsAt = r.GetFieldValue<DateTimeOffset>(4).ToLocalTime(),
+                VenueId = r.GetInt32(5),
+                TicketPrice = r.GetDecimal(6),
+                TotalTickets = r.GetInt32(7)
+            };
+
+            ViewBag.Venues = GetVenues();
+            ViewBag.Categories = GetCategories();
+            ViewBag.EventId = id;
+            return View(vm);
+
+        }
+
+        // ---------- EDIT (POST) ----------
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Edit(int id, CreateEventVm vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Venues = GetVenues();
+                ViewBag.Categories = GetCategories();
+                ViewBag.EventId = id;
+                return View(vm);
+            }
+
+            var organizerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            using var conn = _db.GetConnection();
+            conn.Open();
+            using var tx = conn.BeginTransaction();
+
+            try
+            {
+                // 1) Ensure event belongs to organizer and get sold_count
+                int sold;
+                using (var check = new NpgsqlCommand(@"
+                    SELECT sold_count FROM event
+                    WHERE event_id=@id AND organizer_id=@org;", conn, tx))
+                {
+                    check.Parameters.AddWithValue("id", id);
+                    check.Parameters.AddWithValue("org", organizerId);
+                    var obj = check.ExecuteScalar();
+                    if (obj is null) { try { tx.Rollback(); } catch { } return NotFound(); }
+                    sold = Convert.ToInt32(obj);
+                }
+
+                // 2) Validate TotalTickets vs sold
+                if (vm.TotalTickets < sold)
+                {
+                    ModelState.AddModelError("TotalTickets", $"Total tickets cannot be lower than already sold ({sold}).");
+                    try { tx.Rollback(); } catch { }
+                    ViewBag.Venues = GetVenues();
+                    ViewBag.Categories = GetCategories();
+                    ViewBag.EventId = id;
+                    return View(vm);
+                }
+
+                // 3) Validate venue capacity
+                int capacity;
+                using (var cap = new NpgsqlCommand("SELECT capacity FROM venue WHERE venue_id=@vid;", conn, tx))
+                {
+                    cap.Parameters.AddWithValue("vid", vm.VenueId);
+                    var capObj = cap.ExecuteScalar();
+                    if (capObj is null)
+                    {
+                        ModelState.AddModelError("VenueId", "Selected venue does not exist.");
+                        try { tx.Rollback(); } catch { }
+                        ViewBag.Venues = GetVenues();
+                        ViewBag.Categories = GetCategories();
+                        ViewBag.EventId = id;
+                        return View(vm);
+                    }
+                    capacity = Convert.ToInt32(capObj);
+                }
+                if (vm.TotalTickets > capacity)
+                {
+                    ModelState.AddModelError("TotalTickets", $"Total tickets cannot exceed venue capacity ({capacity}).");
+                    try { tx.Rollback(); } catch { }
+                    ViewBag.Venues = GetVenues();
+                    ViewBag.Categories = GetCategories();
+                    ViewBag.EventId = id;
+                    return View(vm);
+                }
+
+                // 4) Validate date in future (allow small slack if you prefer)
+                if (vm.StartsAt <= DateTimeOffset.Now)
+                {
+                    ModelState.AddModelError("StartsAt", "Start date/time must be in the future.");
+                    try { tx.Rollback(); } catch { }
+                    ViewBag.Venues = GetVenues();
+                    ViewBag.Categories = GetCategories();
+                    ViewBag.EventId = id;
+                    return View(vm);
+                }
+
+                var utcStart = vm.StartsAt.ToUniversalTime();
+
+                // 5) Update
+                using var upd = new NpgsqlCommand(@"
+                    UPDATE event
+                    SET title=@title, description=@desc, category_id=@cat,
+                        starts_at=@start, venue_id=@vid,
+                        ticket_price=@price, total_tickets=@total,
+                        updated_at=now()
+                    WHERE event_id=@id AND organizer_id=@org;", conn, tx);
+
+                upd.Parameters.AddWithValue("title", vm.Title);
+                upd.Parameters.AddWithValue("desc", (object?)vm.Description ?? DBNull.Value);
+                upd.Parameters.AddWithValue("cat", vm.CategoryId);
+                upd.Parameters.AddWithValue("start", utcStart);
+                upd.Parameters.AddWithValue("vid", vm.VenueId);
+                upd.Parameters.AddWithValue("price", vm.TicketPrice);
+                upd.Parameters.AddWithValue("total", vm.TotalTickets);
+                upd.Parameters.AddWithValue("id", id);
+                upd.Parameters.AddWithValue("org", organizerId);
+
+                var rows = upd.ExecuteNonQuery();
+                if (rows == 0) { try { tx.Rollback(); } catch { } return NotFound(); }
+
+                tx.Commit();
+                TempData["OrgEventMessage"] = "Event updated.";
+                return RedirectToAction("Index");
+            }
+            catch
+            {
+                try { tx.Rollback(); } catch { }
+                ModelState.AddModelError(string.Empty, "Could not update event. Please try again.");
+                ViewBag.Venues = GetVenues();
+                ViewBag.Categories = GetCategories();
+                ViewBag.EventId = id;
+                return View(vm);
+            }
+        }
+
+
         // GET: /OrgEvents?page=1&pageSize=6&q=&status=All
         public IActionResult Index(int page = 1, int pageSize = 6, string? q = null, string status = "All")
         {

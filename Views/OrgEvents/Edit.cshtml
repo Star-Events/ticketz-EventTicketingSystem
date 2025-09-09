@@ -1,0 +1,90 @@
+@model EventTicketingSystem.Models.CreateEventVm
+@{
+    ViewData["Title"] = "Edit Event";
+    var venues = (List<EventTicketingSystem.Controllers.VenueItem>)ViewBag.Venues;
+    var categories = (List<EventTicketingSystem.Controllers.CategoryItem>)ViewBag.Categories;
+    var eventId = (int)ViewBag.EventId;
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">Edit Event</h1>
+        <a class="btn btn-outline-secondary" asp-action="Index">Back to My Events</a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label"></label>
+                    <input asp-for="Title" class="form-control" />
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="CategoryId" class="form-label"></label>
+                        <select asp-for="CategoryId" class="form-select">
+                            <option value="">-- Select a category --</option>
+                            @foreach (var c in categories)
+                            {
+                                <option value="@c.CategoryId">@c.Name</option>
+                            }
+                        </select>
+                        <span asp-validation-for="CategoryId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="StartsAt" class="form-label"></label>
+                        <input asp-for="StartsAt" class="form-control" type="datetime-local"
+                            value="@Model.StartsAt.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")" />
+                        <span asp-validation-for="StartsAt" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="VenueId" class="form-label"></label>
+                        <select asp-for="VenueId" class="form-select">
+                            <option value="">-- Select a venue --</option>
+                            @foreach (var v in venues)
+                            {
+                                <option value="@v.VenueId">@v.Name</option>
+                            }
+                        </select>
+                        <span asp-validation-for="VenueId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label asp-for="TicketPrice" class="form-label"></label>
+                        <input asp-for="TicketPrice" class="form-control" />
+                        <span asp-validation-for="TicketPrice" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label asp-for="TotalTickets" class="form-label"></label>
+                        <input asp-for="TotalTickets" class="form-control" />
+                        <span asp-validation-for="TotalTickets" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button class="btn btn-dark" type="submit">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
