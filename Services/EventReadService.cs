@@ -78,7 +78,8 @@ namespace EventTicketingSystem.Services
                 SELECT e.event_id, e.title, COALESCE(e.description,''), 
                     COALESCE(ec.name,'Uncategorized') AS category_name,
                     e.starts_at, e.ticket_price, e.total_tickets, e.sold_count,
-                    v.name AS venue_name, u.full_name AS organizer_name
+                    v.name AS venue_name, u.full_name AS organizer_name,
+                    e.status
                 FROM event e
                 JOIN venue v ON v.venue_id = e.venue_id
                 JOIN users u ON u.user_id = e.organizer_id
@@ -102,7 +103,8 @@ namespace EventTicketingSystem.Services
                 TotalTickets = r.GetInt32(6),
                 SoldCount = r.GetInt32(7),
                 Venue = r.GetString(8),
-                OrganizerName = r.GetString(9)
+                OrganizerName = r.GetString(9),
+                Status = r.GetString(10)
             };
         }
 
