@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using EventTicketingSystem.Models;
 using EventTicketingSystem.Services;
 using EventTicketingSystem.Data;
