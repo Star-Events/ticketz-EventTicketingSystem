@@ -20,7 +20,12 @@
 
         <div class="text-muted small mb-2">@Model.DateTime • @Model.Venue</div>
         <div class="fw-semibold mb-3">@Model.Price</div>
-        <div class="small text-muted mb-3">Sold: @Model.Availability</div>
+        <div class="small text-muted mb-3">Sold: @Model.Availability
+            @if (Model.IsSoldOut)
+            {
+                <span class="badge text-bg-dark ms-2">Sold out</span>
+            }
+        </div>
 
         <div class="mt-auto d-flex gap-2">
             <a class="btn btn-outline-secondary" asp-controller="Events" asp-action="Details"

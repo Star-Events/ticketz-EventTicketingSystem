@@ -14,6 +14,16 @@ namespace EventTicketingSystem.Services
             using var conn = _db.GetConnection();
             conn.Open();
 
+            using (var auto = new NpgsqlCommand(@"
+                UPDATE event
+                SET status='Completed', updated_at=now()
+                WHERE status IN ('Upcoming','Live')
+                AND starts_at < now();", conn))
+            {
+                auto.ExecuteNonQuery();
+            }
+
+
             var where = "";
             if (!string.IsNullOrWhiteSpace(q))
                 where = "WHERE LOWER(e.title) LIKE LOWER(@q)";
@@ -63,6 +73,8 @@ namespace EventTicketingSystem.Services
                     Price = $"LKR {r.GetDecimal(3):N0}",
                     Availability = $"{sold} / {totalTickets}",
                     Venue = r.GetString(6),
+                    Status = r.GetString(8),
+                    Remaining = totalTickets - sold
                 });
             }
             return (list, total);
@@ -72,6 +84,15 @@ namespace EventTicketingSystem.Services
         {
             using var conn = _db.GetConnection();
             conn.Open();
+
+            using (var auto = new NpgsqlCommand(@"
+                UPDATE event
+                SET status='Completed', updated_at=now()
+                WHERE status IN ('Upcoming','Live')
+                AND starts_at < now();", conn))
+            {
+                auto.ExecuteNonQuery();
+            }
 
 
             using var cmd = new NpgsqlCommand(@"
@@ -113,6 +134,15 @@ namespace EventTicketingSystem.Services
             using var conn = _db.GetConnection();
             conn.Open();
 
+            using (var auto = new NpgsqlCommand(@"
+                UPDATE event
+                SET status='Completed', updated_at=now()
+                WHERE status IN ('Upcoming','Live')
+                AND starts_at < now();", conn))
+            {
+                auto.ExecuteNonQuery();
+            }
+
             using var cmd = new NpgsqlCommand(@"
                 SELECT e.event_id, e.title, e.starts_at, e.ticket_price, e.total_tickets, e.sold_count,
                     v.name AS venue_name, e.status
@@ -140,7 +170,8 @@ namespace EventTicketingSystem.Services
                     Venue = r.GetString(6),
                     Price = $"LKR {r.GetDecimal(3):N0}",
                     Availability = $"{sold} / {total}", // or $"{total - sold} / {total}" if you prefer “Available”
-                    Status = r.GetString(7)
+                    Status = r.GetString(7),
+                    Remaining = total - sold
                 });
             }
             return list;

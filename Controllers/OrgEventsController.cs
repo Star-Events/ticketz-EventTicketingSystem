@@ -22,6 +22,18 @@ namespace EventTicketingSystem.Controllers
             using var conn = _db.GetConnection();
             conn.Open();
 
+            // ✅ Auto-complete past events for this organizer
+            using (var auto = new NpgsqlCommand(@"
+                UPDATE event
+                SET status='Completed', updated_at=now()
+                WHERE organizer_id=@org
+                AND status IN ('Upcoming','Live')
+                AND starts_at < now();", conn))
+            {
+                auto.Parameters.AddWithValue("org", organizerId);
+                auto.ExecuteNonQuery();
+            }
+
             var where = "WHERE e.organizer_id = @org";
 
             if (!string.IsNullOrWhiteSpace(q))
