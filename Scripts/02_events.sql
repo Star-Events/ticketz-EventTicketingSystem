@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS event (
   ticket_price  NUMERIC(10,2) NOT NULL,
   total_tickets INTEGER NOT NULL CHECK (total_tickets >= 0),
   sold_count    INTEGER NOT NULL DEFAULT 0 CHECK (sold_count >= 0),
-  status        VARCHAR(20) NOT NULL DEFAULT 'Upcoming', -- Upcoming/Completed/Cancelled
+  status        VARCHAR(20) NOT NULL DEFAULT 'Upcoming', -- Upcoming/Live/Completed/cancelled
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
