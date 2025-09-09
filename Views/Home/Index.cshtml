@@ -5,7 +5,7 @@
 
 <section class="p-4 p-md-5 mb-4 bg-white rounded-3 shadow-lg mt-4">
     <div class="row align-items-center g-4">
-         <div class="col-md-12">
+        <div class="col-md-12">
             <div class="p-3 bg-dark text-white rounded-3">
                 <div class="small text-uppercase opacity-75">Promo</div>
                 <div class="h5 my-2">Use code <strong>ROCK10</strong> for 10% off</div>
@@ -32,7 +32,7 @@
                 </div>
             </form>
         </div>
-       
+
     </div>
 </section>
 
@@ -45,10 +45,9 @@
     <div class="row g-3">
         @foreach (var e in Model)
         {
-           <div class="col-12 col-md-6">
+            <div class="col-12 col-md-6">
                 @await Component.InvokeAsync("EventCard", new { model = e })
             </div>
         }
     </div>
 </section>
-
