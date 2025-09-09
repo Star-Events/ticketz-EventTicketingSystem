@@ -10,7 +10,10 @@ namespace EventTicketingSystem.Models
         public string Availability { get; set; } = "";
 
         public string Status { get; set; } = "Upcoming";  // Upcoming | Live | Completed | Cancelled
-        public bool CanBuy => string.Equals(Status, "Live", StringComparison.OrdinalIgnoreCase);
+
+        public int Remaining { get; set; }                // total - sold
+        public bool IsSoldOut => Remaining <= 0;
+        public bool CanBuy => string.Equals(Status, "Live", StringComparison.OrdinalIgnoreCase) && !IsSoldOut;
 
     }
 }

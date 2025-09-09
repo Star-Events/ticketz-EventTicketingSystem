@@ -9,5 +9,7 @@ namespace EventTicketingSystem.Models
         public string Price { get; set; } = "";         // formatted price
         public string Availability { get; set; } = "";  // e.g., "120 / 800"
         public string Status { get; set; } = "Upcoming";
+
+        public int Remaining { get; set; }
     }
 }

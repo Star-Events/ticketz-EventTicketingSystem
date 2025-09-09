@@ -15,12 +15,144 @@ namespace EventTicketingSystem.Controllers
         private readonly DbHelper _db;
         public OrgEventsController(DbHelper db) { _db = db; }
 
-        // GET: /OrgEvents
-        public IActionResult Index()
+        // GET: /OrgEvents?page=1&pageSize=6&q=&status=All
+        public IActionResult Index(int page = 1, int pageSize = 6, string? q = null, string status = "All")
         {
-            // You can list organizer's events later.
-            return View();
+            var organizerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            using var conn = _db.GetConnection();
+            conn.Open();
+
+            // ✅ Auto-complete past events for this organizer
+            using (var auto = new NpgsqlCommand(@"
+                UPDATE event
+                SET status='Completed', updated_at=now()
+                WHERE organizer_id=@org
+                AND status IN ('Upcoming','Live')
+                AND starts_at < now();", conn))
+            {
+                auto.Parameters.AddWithValue("org", organizerId);
+                auto.ExecuteNonQuery();
+            }
+
+            var where = "WHERE e.organizer_id = @org";
+
+            if (!string.IsNullOrWhiteSpace(q))
+                where += " AND (LOWER(e.title) LIKE LOWER(@q) OR LOWER(v.name) LIKE LOWER(@q))";
+            if (!string.IsNullOrWhiteSpace(status) && !status.Equals("All", StringComparison.OrdinalIgnoreCase))
+                where += " AND e.status = @status";
+
+            // total
+            using var countCmd = new NpgsqlCommand($@"
+                SELECT COUNT(*)
+                FROM event e
+                JOIN venue v ON v.venue_id = e.venue_id
+                {where};", conn);
+            countCmd.Parameters.AddWithValue("org", organizerId);
+            if (!string.IsNullOrWhiteSpace(q)) countCmd.Parameters.AddWithValue("q", $"%{q}%");
+            if (!string.Equals(status, "All", StringComparison.OrdinalIgnoreCase)) countCmd.Parameters.AddWithValue("status", status);
+            var total = Convert.ToInt32(countCmd.ExecuteScalar());
+
+            // page
+            using var cmd = new NpgsqlCommand($@"
+                SELECT e.event_id, e.title, e.starts_at, e.status, e.total_tickets, e.sold_count, v.name
+                FROM event e
+                JOIN venue v ON v.venue_id = e.venue_id
+                {where}
+                ORDER BY e.starts_at DESC
+                LIMIT @ps OFFSET @off;", conn);
+            cmd.Parameters.AddWithValue("org", organizerId);
+            if (!string.IsNullOrWhiteSpace(q)) cmd.Parameters.AddWithValue("q", $"%{q}%");
+            if (!string.Equals(status, "All", StringComparison.OrdinalIgnoreCase)) cmd.Parameters.AddWithValue("status", status);
+            cmd.Parameters.AddWithValue("ps", Math.Clamp(pageSize, 1, 50));
+            cmd.Parameters.AddWithValue("off", (Math.Max(page, 1) - 1) * Math.Clamp(pageSize, 1, 50));
+
+            var list = new List<MyEventRow>();
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+            {
+                list.Add(new MyEventRow
+                {
+                    Id = r.GetInt32(0),
+                    Title = r.GetString(1),
+                    StartsAtLocal = r.GetFieldValue<DateTimeOffset>(2).ToLocalTime(),
+                    Status = r.GetString(3),
+                    Total = r.GetInt32(4),
+                    Sold = r.GetInt32(5),
+                    Venue = r.GetString(6)
+                });
+            }
+
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)total / Math.Clamp(pageSize, 1, 50));
+            ViewBag.Q = q;
+            ViewBag.Status = status;
+
+            return View(list);
         }
+
+        // POST: /OrgEvents/Publish/123  (Upcoming -> Live)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Publish(int id)
+        {
+            var orgId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            using var conn = _db.GetConnection();
+            conn.Open();
+
+            using var cmd = new NpgsqlCommand(@"
+                UPDATE event SET status='Live', updated_at=now()
+                WHERE event_id=@id AND organizer_id=@org AND status='Upcoming';", conn);
+            cmd.Parameters.AddWithValue("id", id);
+            cmd.Parameters.AddWithValue("org", orgId);
+
+            var rows = cmd.ExecuteNonQuery();
+            TempData["OrgEventMessage"] = rows > 0 ? "Event published (Live)." : "Publish failed.";
+            return RedirectToAction("Index");
+        }
+
+        // POST: /OrgEvents/Unpublish/123  (Live -> Upcoming)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Unpublish(int id)
+        {
+            var orgId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            using var conn = _db.GetConnection();
+            conn.Open();
+
+            using var cmd = new NpgsqlCommand(@"
+                UPDATE event SET status='Upcoming', updated_at=now()
+                WHERE event_id=@id AND organizer_id=@org AND status='Live';", conn);
+            cmd.Parameters.AddWithValue("id", id);
+            cmd.Parameters.AddWithValue("org", orgId);
+
+            var rows = cmd.ExecuteNonQuery();
+            TempData["OrgEventMessage"] = rows > 0 ? "Event unpublished (Upcoming)." : "Unpublish failed.";
+            return RedirectToAction("Index");
+        }
+
+        // POST: /OrgEvents/Cancel/123  (-> Cancelled)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Cancel(int id)
+        {
+            var orgId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            using var conn = _db.GetConnection();
+            conn.Open();
+
+            using var cmd = new NpgsqlCommand(@"
+                UPDATE event SET status='Cancelled', updated_at=now()
+                WHERE event_id=@id AND organizer_id=@org AND status <> 'Cancelled';", conn);
+            cmd.Parameters.AddWithValue("id", id);
+            cmd.Parameters.AddWithValue("org", orgId);
+
+            var rows = cmd.ExecuteNonQuery();
+            TempData["OrgEventMessage"] = rows > 0 ? "Event cancelled." : "Cancel failed.";
+            return RedirectToAction("Index");
+        }
+
+
+
 
         // GET: /OrgEvents/Create
         [HttpGet]
@@ -156,5 +288,16 @@ namespace EventTicketingSystem.Controllers
     {
         public int VenueId { get; set; }
         public string Name { get; set; } = "";
+    }
+
+    public class MyEventRow
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public DateTimeOffset StartsAtLocal { get; set; }
+        public string Venue { get; set; } = "";
+        public string Status { get; set; } = "Upcoming";
+        public int Total { get; set; }
+        public int Sold { get; set; }
     }
 }
