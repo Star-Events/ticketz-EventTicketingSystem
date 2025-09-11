@@ -427,15 +427,36 @@ namespace EventTicketingSystem.Controllers
 
 
         // Helper: simple venue item for dropdown
+        // private List<VenueItem> GetVenues()
+        // {
+        //     var list = new List<VenueItem>();
+        //     using var conn = _db.GetConnection();
+        //     conn.Open();
+        //     using var cmd = new NpgsqlCommand("SELECT venue_id, name FROM venue ORDER BY name;", conn);
+        //     using var r = cmd.ExecuteReader();
+        //     while (r.Read())
+        //         list.Add(new VenueItem { VenueId = r.GetInt32(0), Name = r.GetString(1) });
+        //     return list;
+        // }
         private List<VenueItem> GetVenues()
         {
+            var orgId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var list = new List<VenueItem>();
             using var conn = _db.GetConnection();
             conn.Open();
-            using var cmd = new NpgsqlCommand("SELECT venue_id, name FROM venue ORDER BY name;", conn);
+
+            using var cmd = new NpgsqlCommand(@"
+                SELECT venue_id, name
+                FROM venue
+                WHERE is_active = TRUE
+                AND (created_by IS NULL OR created_by = @org)
+                ORDER BY name;", conn);
+            cmd.Parameters.AddWithValue("org", orgId);
+
             using var r = cmd.ExecuteReader();
             while (r.Read())
                 list.Add(new VenueItem { VenueId = r.GetInt32(0), Name = r.GetString(1) });
+
             return list;
         }
     }
@@ -446,11 +467,13 @@ namespace EventTicketingSystem.Controllers
         public string Name { get; set; } = "";
     }
 
-    public class VenueItem
-    {
-        public int VenueId { get; set; }
-        public string Name { get; set; } = "";
-    }
+    // public class VenueItem
+    // {
+    //     public int VenueId { get; set; }
+    //     public string Name { get; set; } = "";
+    // }
+
+    public class VenueItem { public int VenueId { get; set; } public string Name { get; set; } = ""; }
 
     public class MyEventRow
     {
