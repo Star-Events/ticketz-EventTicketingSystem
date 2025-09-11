@@ -21,12 +21,16 @@
                         <div class="row g-2 align-items-end">
                             <div class="col-6 col-md-4">
                                 <label class="form-label">Quantity</label>
-                                <input name="Quantity" type="number" min="1" max="@Model.Remaining"
+                                <input id="quantityInput" name="Quantity" type="number" min="1" max="@Model.Remaining"
                                     value="@Model.Quantity" class="form-control" />
                                 <div class="form-text">@Model.Remaining remaining</div>
                             </div>
                             <div class="col-6 col-md-4">
-                                <div>Total: <strong>LKR @(Model.Price* Model.Quantity).ToString("N0")</strong></div>
+                                <div>Total: <strong>LKR <span id="totalAmount">
+                                            @((Model.Price * Model.Quantity).ToString("N0"))
+                                        </span>
+                                    </strong>
+                                </div>
                             </div>
                             <div class="col-md-4 d-grid">
                                 <button class="btn btn-dark" type="submit">Proceed to Payment</button>
@@ -46,4 +50,17 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        const price = @Model.Price; // Razor injects price as number
+        const qtyInput = document.getElementById('quantityInput');
+        const totalSpan = document.getElementById('totalAmount');
+
+        qtyInput.addEventListener('input', function () {
+            let qty = parseInt(qtyInput.value) || 1;
+            if (qty < 1) qty = 1;
+            if (qty > @Model.Remaining) qty = @Model.Remaining;
+            const total = price * qty;
+            totalSpan.textContent = total.toLocaleString('en-LK'); // nicely formatted
+        });
+    </script>
 }
