@@ -1,0 +1,18 @@
+@model EventTicketingSystem.Models.CheckoutSuccessVm
+@{
+    ViewData["Title"] = "Order Success";
+}
+<div class="container py-5 text-center">
+    <div class="mb-3 display-6">🎉 Purchase successful!</div>
+    <p>Order <strong>@Model.BookingId</strong> for <strong>@Model.TicketCount</strong> ticket(s) to
+        <strong>@Model.Title</strong>.
+    </p>
+    <p class="text-muted">@Model.StartsAt.ToString("ddd dd MMM yyyy, h:mm tt") — @Model.Venue</p>
+    <p class="mb-4">Total paid: <strong>LKR @Model.TotalAmount.ToString("N0")</strong></p>
+
+    <div class="d-flex justify-content-center gap-2">
+        <a class="btn btn-dark" asp-controller="Tickets" asp-action="My">Go to My Tickets</a>
+        <a class="btn btn-outline-secondary" asp-controller="Events" asp-action="Details"
+            asp-route-id="@Model.EventId">Back to Event</a>
+    </div>
+</div>

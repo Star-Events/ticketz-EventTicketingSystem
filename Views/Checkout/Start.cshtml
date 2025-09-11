@@ -1,0 +1,66 @@
+@model EventTicketingSystem.Models.CheckoutVm
+@{
+    ViewData["Title"] = "Checkout";
+}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <h1 class="h4 mb-3">Checkout</h1>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="mb-2"><strong>@Model.Title</strong></div>
+                    <div class="text-muted small mb-2">@Model.StartsAt.ToString("ddd dd MMM yyyy, h:mm tt") —
+                        @Model.Venue</div>
+                    <div class="mb-3">Price per ticket: <strong>LKR @Model.Price.ToString("N0")</strong></div>
+
+                    <form method="post" asp-action="Confirm" novalidate>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="EventId" value="@Model.EventId" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+                        <div class="row g-2 align-items-end">
+                            <div class="col-6 col-md-4">
+                                <label class="form-label">Quantity</label>
+                                <input id="quantityInput" name="Quantity" type="number" min="1" max="@Model.Remaining"
+                                    value="@Model.Quantity" class="form-control" />
+                                <div class="form-text">@Model.Remaining remaining</div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div>Total: <strong>LKR <span id="totalAmount">
+                                            @((Model.Price * Model.Quantity).ToString("N0"))
+                                        </span>
+                                    </strong>
+                                </div>
+                            </div>
+                            <div class="col-md-4 d-grid">
+                                <button class="btn btn-dark" type="submit">Proceed to Payment</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="mt-3">
+                        <a class="btn btn-link p-0" asp-controller="Events" asp-action="Details"
+                            asp-route-id="@Model.EventId">Back to event</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const price = @Model.Price; // Razor injects price as number
+        const qtyInput = document.getElementById('quantityInput');
+        const totalSpan = document.getElementById('totalAmount');
+
+        qtyInput.addEventListener('input', function () {
+            let qty = parseInt(qtyInput.value) || 1;
+            if (qty < 1) qty = 1;
+            if (qty > @Model.Remaining) qty = @Model.Remaining;
+            const total = price * qty;
+            totalSpan.textContent = total.toLocaleString('en-LK'); // nicely formatted
+        });
+    </script>
+}
