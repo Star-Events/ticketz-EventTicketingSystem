@@ -11,5 +11,7 @@ namespace EventTicketingSystem.Models
         public string Status { get; set; } = "Upcoming";
 
         public int Remaining { get; set; }
+
+        public string? ImageThumbPath { get; set; }
     }
 }

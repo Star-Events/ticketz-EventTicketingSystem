@@ -13,6 +13,13 @@
 }
 
 <div class="container py-4">
+@if (!string.IsNullOrWhiteSpace(Model.ImagePath))
+{
+    <div class="mb-3">
+      <img src="@Model.ImagePath" alt="@Model.Title" class="img-fluid rounded"
+        style="max-height:360px; width:100%; object-fit:cover;" />
+    </div>
+}
   <div class="row">
     <div class="col-lg-8">
       <div class="d-flex align-items-center gap-2 mb-2"></div>
