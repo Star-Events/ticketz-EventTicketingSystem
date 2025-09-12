@@ -14,7 +14,7 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body p-4">
-            <form method="post" novalidate>
+            <form method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
@@ -28,6 +28,18 @@
                     <label asp-for="Description" class="form-label"></label>
                     <textarea asp-for="Description" class="form-control" rows="4"></textarea>
                     <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                @if (ViewBag.ImagePath is string img && !string.IsNullOrWhiteSpace(img))
+                {
+                    <img src="@img" alt="Cover image" class="img-fluid rounded mb-2"
+                        style="max-height:260px;object-fit:cover;" />
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">Replace Cover Image</label>
+                    <input type="file" name="image" accept="image/jpeg,image/png" class="form-control" />
+                    <div class="form-text">Uploading a new image will replace the existing one.</div>
                 </div>
 
                 <div class="row">

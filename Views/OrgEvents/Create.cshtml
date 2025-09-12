@@ -13,7 +13,7 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body p-4">
-            <form method="post" novalidate>
+            <form method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
 
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
@@ -28,6 +28,13 @@
                     <label asp-for="Description" class="form-label"></label>
                     <textarea asp-for="Description" class="form-control" rows="4"></textarea>
                     <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Cover Image (JPG/PNG, max 5 MB)</label>
+                    <input type="file" name="image" accept="image/jpeg,image/png" class="form-control" />
+                    <div class="form-text">Recommended size: 1280×720 or similar. We’ll create a thumbnail
+                        automatically.</div>
                 </div>
 
                 <div class="row">

@@ -15,5 +15,7 @@ namespace EventTicketingSystem.Models
         public bool IsSoldOut => Remaining <= 0;
         public bool CanBuy => string.Equals(Status, "Live", StringComparison.OrdinalIgnoreCase) && !IsSoldOut;
 
+        public string? ImageThumbPath { get; set; }
+
     }
 }

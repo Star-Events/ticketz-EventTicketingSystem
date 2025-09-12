@@ -18,6 +18,12 @@
             <span class="badge text-bg-@StatusClass(Model.Status)">@Model.Status</span>
         </div>
 
+        <div class=" h-100 mt-3 mb-3">
+            <img src="@(!string.IsNullOrWhiteSpace(Model.ImageThumbPath) ? Model.ImageThumbPath 
+                                    : Url.Content("~/images/placeholder.png"))" class="card-img-top" alt="@Model.Title"
+                style="height:180px; object-fit:cover;" />
+        </div>
+
         <div class="text-muted small mb-2">@Model.DateTime • @Model.Venue</div>
         <div class="fw-semibold mb-3">@Model.Price</div>
         <div class="small text-muted mb-3">Sold: @Model.Availability
