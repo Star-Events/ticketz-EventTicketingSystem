@@ -5,6 +5,8 @@ using Npgsql;
 using EventTicketingSystem.Data;
 using EventTicketingSystem.Models;
 using NpgsqlTypes;
+using EventTicketingSystem.Services;
+
 
 
 namespace EventTicketingSystem.Controllers
@@ -13,7 +15,13 @@ namespace EventTicketingSystem.Controllers
     public class OrgEventsController : Controller
     {
         private readonly DbHelper _db;
-        public OrgEventsController(DbHelper db) { _db = db; }
+        private readonly ImageService _images;
+
+        public OrgEventsController(DbHelper db, ImageService images)
+        {
+            _db = db;
+            _images = images;
+        }
 
         // ---------- EDIT (GET) ----------
         [HttpGet]
@@ -26,7 +34,8 @@ namespace EventTicketingSystem.Controllers
 
             using var cmd = new NpgsqlCommand(@"
                 SELECT e.event_id, e.title, COALESCE(e.description,''), e.category_id, e.starts_at,
-                       e.venue_id, e.ticket_price, e.total_tickets
+                    e.venue_id, e.ticket_price, e.total_tickets,
+                    e.image_path, e.image_thumb_path
                 FROM event e
                 WHERE e.event_id = @id AND e.organizer_id = @org
                 LIMIT 1;", conn);
@@ -47,6 +56,9 @@ namespace EventTicketingSystem.Controllers
                 TotalTickets = r.GetInt32(7)
             };
 
+            ViewBag.ImagePath = r.IsDBNull(8) ? null : r.GetString(8);
+            ViewBag.ImageThumbPath = r.IsDBNull(9) ? null : r.GetString(9);
+
             ViewBag.Venues = GetVenues();
             ViewBag.Categories = GetCategories();
             ViewBag.EventId = id;
@@ -57,7 +69,7 @@ namespace EventTicketingSystem.Controllers
         // ---------- EDIT (POST) ----------
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, CreateEventVm vm)
+        public IActionResult Edit(int id, CreateEventVm vm, IFormFile? image)
         {
             if (!ModelState.IsValid)
             {
@@ -76,16 +88,20 @@ namespace EventTicketingSystem.Controllers
             try
             {
                 // 1) Ensure event belongs to organizer and get sold_count
+                string? oldImg = null, oldThumb = null;
                 int sold;
-                using (var check = new NpgsqlCommand(@"
-                    SELECT sold_count FROM event
+                using (var sel = new NpgsqlCommand(@"
+                    SELECT sold_count, image_path, image_thumb_path
+                    FROM event
                     WHERE event_id=@id AND organizer_id=@org;", conn, tx))
                 {
-                    check.Parameters.AddWithValue("id", id);
-                    check.Parameters.AddWithValue("org", organizerId);
-                    var obj = check.ExecuteScalar();
-                    if (obj is null) { try { tx.Rollback(); } catch { } return NotFound(); }
-                    sold = Convert.ToInt32(obj);
+                    sel.Parameters.AddWithValue("id", id);
+                    sel.Parameters.AddWithValue("org", organizerId);
+                    using var rr = sel.ExecuteReader();
+                    if (!rr.Read()) { tx.Rollback(); return NotFound(); }
+                    sold = rr.GetInt32(0);
+                    oldImg = rr.IsDBNull(1) ? null : rr.GetString(1);
+                    oldThumb = rr.IsDBNull(2) ? null : rr.GetString(2);
                 }
 
                 // 2) Validate TotalTickets vs sold
@@ -140,26 +156,47 @@ namespace EventTicketingSystem.Controllers
                 var utcStart = vm.StartsAt.ToUniversalTime();
 
                 // 5) Update
-                using var upd = new NpgsqlCommand(@"
+                using (var upd = new NpgsqlCommand(@"
                     UPDATE event
                     SET title=@title, description=@desc, category_id=@cat,
                         starts_at=@start, venue_id=@vid,
                         ticket_price=@price, total_tickets=@total,
                         updated_at=now()
-                    WHERE event_id=@id AND organizer_id=@org;", conn, tx);
+                    WHERE event_id=@id AND organizer_id=@org;", conn, tx))
 
-                upd.Parameters.AddWithValue("title", vm.Title);
-                upd.Parameters.AddWithValue("desc", (object?)vm.Description ?? DBNull.Value);
-                upd.Parameters.AddWithValue("cat", vm.CategoryId);
-                upd.Parameters.AddWithValue("start", utcStart);
-                upd.Parameters.AddWithValue("vid", vm.VenueId);
-                upd.Parameters.AddWithValue("price", vm.TicketPrice);
-                upd.Parameters.AddWithValue("total", vm.TotalTickets);
-                upd.Parameters.AddWithValue("id", id);
-                upd.Parameters.AddWithValue("org", organizerId);
+                {
+                    upd.Parameters.AddWithValue("title", vm.Title);
+                    upd.Parameters.AddWithValue("desc", (object?)vm.Description ?? DBNull.Value);
+                    upd.Parameters.AddWithValue("cat", vm.CategoryId);
+                    upd.Parameters.AddWithValue("start", utcStart);
+                    upd.Parameters.AddWithValue("vid", vm.VenueId);
+                    upd.Parameters.AddWithValue("price", vm.TicketPrice);
+                    upd.Parameters.AddWithValue("total", vm.TotalTickets);
+                    upd.Parameters.AddWithValue("id", id);
+                    upd.Parameters.AddWithValue("org", organizerId);
+                    upd.ExecuteNonQuery();
+                }
 
-                var rows = upd.ExecuteNonQuery();
-                if (rows == 0) { try { tx.Rollback(); } catch { } return NotFound(); }
+                if (image != null && image.Length > 0)
+                {
+                    if (image.Length > 5 * 1024 * 1024)
+                        throw new InvalidOperationException("Image too large (max 5MB).");
+
+                    var (img, thumb) = _images.SaveEventImage(image.OpenReadStream(), image.ContentType, id);
+
+                    using var upd2 = new NpgsqlCommand(@"
+                        UPDATE event
+                        SET image_path=@img, image_thumb_path=@thumb, updated_at=now()
+                        WHERE event_id=@id;", conn, tx);
+                    upd2.Parameters.AddWithValue("img", (object?)img ?? DBNull.Value);
+                    upd2.Parameters.AddWithValue("thumb", (object?)thumb ?? DBNull.Value);
+                    upd2.Parameters.AddWithValue("id", id);
+                    upd2.ExecuteNonQuery();
+
+                    // delete old files (after DB success)
+                    _images.DeleteIfExists(oldImg);
+                    _images.DeleteIfExists(oldThumb);
+                }
 
                 tx.Commit();
                 TempData["OrgEventMessage"] = "Event updated.";
@@ -328,7 +365,7 @@ namespace EventTicketingSystem.Controllers
         // POST: /OrgEvents/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(CreateEventVm vm)
+        public IActionResult Create(CreateEventVm vm, IFormFile? image)
         {
             if (!ModelState.IsValid)
             {
@@ -337,9 +374,9 @@ namespace EventTicketingSystem.Controllers
                 return View(vm);
             }
 
-            var organizerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(organizerId))
-                return Forbid();
+            var organizerIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(organizerIdStr)) return Forbid();
+            var organizerId = Guid.Parse(organizerIdStr);
 
             using var conn = _db.GetConnection();
             conn.Open();
@@ -365,7 +402,7 @@ namespace EventTicketingSystem.Controllers
                 if (vm.TotalTickets > capacity)
                 {
                     ModelState.AddModelError("TotalTickets", $"Total tickets cannot exceed venue capacity ({capacity}).");
-                    tx.Rollback(); ViewBag.Venues = GetVenues(); ViewBag.Categories = GetCategories(); return View(vm);
+                    tx.Rollback(); ViewBag.Venues = GetVenues(); return View(vm);
                 }
 
                 // // 2) Insert the event (sold_count defaults to 0; status defaults to 'Upcoming')
@@ -378,23 +415,43 @@ namespace EventTicketingSystem.Controllers
 
                 var utcStart = vm.StartsAt.ToUniversalTime();
 
-                using var cmd = new NpgsqlCommand(@"
+                int newEventId;
+                using (var cmd = new NpgsqlCommand(@"
                     INSERT INTO event
-                        (organizer_id, venue_id, title, description, category_id, starts_at, ticket_price, total_tickets)
+                    (organizer_id, venue_id, title, description, category_id, starts_at, ticket_price, total_tickets)
                     VALUES
-                        (@org, @vid, @title, @desc, @catId, @start, @price, @total);
-                ", conn, tx);
+                    (@org, @vid, @title, @desc, @catId, @start, @price, @total)
+                    RETURNING event_id;", conn, tx))
+                {
+                    cmd.Parameters.AddWithValue("org", organizerId);
+                    cmd.Parameters.AddWithValue("vid", vm.VenueId);
+                    cmd.Parameters.AddWithValue("title", vm.Title);
+                    cmd.Parameters.AddWithValue("desc", (object?)vm.Description ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("catId", vm.CategoryId);
+                    cmd.Parameters.AddWithValue("start", utcStart);
+                    cmd.Parameters.AddWithValue("price", vm.TicketPrice);
+                    cmd.Parameters.AddWithValue("total", vm.TotalTickets);
+                    newEventId = Convert.ToInt32(cmd.ExecuteScalar());
+                }
 
-                cmd.Parameters.AddWithValue("org", Guid.Parse(organizerId));
-                cmd.Parameters.AddWithValue("vid", vm.VenueId);
-                cmd.Parameters.AddWithValue("title", vm.Title);
-                cmd.Parameters.AddWithValue("desc", (object?)vm.Description ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("catId", vm.CategoryId);
-                cmd.Parameters.Add("start", NpgsqlDbType.TimestampTz).Value = utcStart;
-                cmd.Parameters.AddWithValue("price", vm.TicketPrice);
-                cmd.Parameters.AddWithValue("total", vm.TotalTickets);
+                // If an image was uploaded: validate, process, save, then update paths
+                if (image != null && image.Length > 0)
+                {
+                    if (image.Length > 5 * 1024 * 1024)
+                        throw new InvalidOperationException("Image too large (max 5MB).");
 
-                cmd.ExecuteNonQuery();
+                    var (img, thumb) = _images.SaveEventImage(image.OpenReadStream(), image.ContentType, newEventId);
+
+                    using var upd = new NpgsqlCommand(@"
+                        UPDATE event SET image_path=@img, image_thumb_path=@thumb, updated_at=now()
+                        WHERE event_id=@id;", conn, tx);
+                    upd.Parameters.AddWithValue("img", (object?)img ?? DBNull.Value);
+                    upd.Parameters.AddWithValue("thumb", (object?)thumb ?? DBNull.Value);
+                    upd.Parameters.AddWithValue("id", newEventId);
+                    upd.ExecuteNonQuery();
+                }
+
+                // cmd.ExecuteNonQuery();
                 tx.Commit();
 
                 TempData["OrgEventMessage"] = "Event created successfully.";
