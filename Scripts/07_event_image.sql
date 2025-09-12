@@ -1,0 +1,3 @@
+ALTER TABLE event
+  ADD COLUMN IF NOT EXISTS image_path TEXT NULL,
+  ADD COLUMN IF NOT EXISTS image_thumb_path TEXT NULL;
