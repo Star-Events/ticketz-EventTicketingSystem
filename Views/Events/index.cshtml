@@ -13,12 +13,21 @@
     <div class="col-12 col-md-6">
       <input class="form-control" name="q" value="@q" placeholder="Search events..." />
     </div>
+    <div class="col-6 col-md-2">
+      <input type="date" class="form-control" name="from" value="@ViewBag.From" />
+    </div>
+    <div class="col-6 col-md-2">
+      <input type="date" class="form-control" name="to" value="@ViewBag.To" />
+    </div>
     <div class="col-6 col-md-3">
       <select name="pageSize" class="form-select" onchange="this.form.submit()">
         <option value="6" selected="@(pageSize == 6)">6 per page</option>
         <option value="8" selected="@(pageSize == 8)">8 per page</option>
         <option value="12" selected="@(pageSize == 12)">12 per page</option>
       </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <button class="btn btn-dark w-100" type="submit">Filter</button>
     </div>
     <div class="col-6 col-md-3">
       <button class="btn btn-dark w-100" type="submit">Search</button>
