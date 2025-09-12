@@ -12,6 +12,8 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddSingleton<DbHelper>();
 
+builder.Services.AddSingleton<EventTicketingSystem.Services.ImageService>();
+
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -24,6 +26,7 @@ builder.Services
     });
 
 builder.Services.AddSingleton<EventReadService>();
+
 
 builder.Services.AddAuthorization();
 
@@ -41,6 +44,7 @@ app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseStaticFiles();
 
 app.MapStaticAssets();
 
