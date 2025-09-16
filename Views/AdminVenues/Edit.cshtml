@@ -1,0 +1,43 @@
+@model EventTicketingSystem.Models.EditVenueVm
+@{
+    ViewData["Title"] = "Edit Venue";
+}
+<div class="container py-4" style="max-width:860px;">
+    <h1 class="h4 mb-3">Edit Venue</h1>
+
+    <form method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="VenueId" />
+
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label"></label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Address" class="form-label"></label>
+            <textarea asp-for="Address" class="form-control" rows="3"></textarea>
+            <span asp-validation-for="Address" class="text-danger"></span>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-6">
+                <label asp-for="Capacity" class="form-label"></label>
+                <input asp-for="Capacity" type="number" min="1" class="form-control" />
+                <span asp-validation-for="Capacity" class="text-danger"></span>
+            </div>
+            <div class="col-6 d-flex align-items-end">
+                <div class="form-check">
+                    <input asp-for="IsActive" class="form-check-input" />
+                    <label asp-for="IsActive" class="form-check-label">Active</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+            <button class="btn btn-dark" type="submit">Save Changes</button>
+        </div>
+    </form>
+</div>

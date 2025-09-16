@@ -1,0 +1,29 @@
+@model EventTicketingSystem.Models.EditVenueVm
+@{
+    ViewData["Title"] = "Delete Venue";
+    var refCount = (int)(ViewBag.RefCount ?? 0);
+}
+<div class="container py-4" style="max-width:720px;">
+    <h1 class="h4 mb-3">Delete Venue</h1>
+
+    @if (refCount > 0)
+    {
+        <div class="alert alert-warning">
+            This venue is used by <strong>@refCount</strong> event(s). You cannot delete it.
+            Please deactivate it instead or remove those events first.
+        </div>
+        <a class="btn btn-outline-secondary" asp-action="Index">Back</a>
+    }
+    else
+    {
+        <div class="alert alert-danger">
+            Are you sure you want to delete <strong>@Model.Name</strong>? This cannot be undone.
+        </div>
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="VenueId" />
+            <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+            <button class="btn btn-danger" type="submit">Delete</button>
+        </form>
+    }
+</div>
