@@ -1,124 +1,237 @@
 @model EventTicketingSystem.Models.AdminDashboardVm
 @{
     ViewData["Title"] = "Admin Dashboard";
-    string Badge(string s) => s?.ToLower() switch {
-        "live" => "success", "upcoming" => "secondary",
-        "completed" => "dark", "cancelled" => "danger", _ => "secondary"
+
+    string Badge(string s) => s?.ToLower() switch
+    {
+        "live" => "success",
+        "upcoming" => "secondary",
+        "completed" => "dark",
+        "cancelled" => "danger",
+        _ => "secondary"
     };
+
+    string K(Int32 n) => n.ToString("N0");
+    string Money(decimal v) => $"LKR {v.ToString("N0")}";
 }
 
+<style>
+    /* light polish (scoped to this page only) */
+    .kpi-card .big {
+        font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+        font-weight: 700;
+        letter-spacing: .2px;
+    }
+
+    .kpi-accent {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(33, 37, 41, .07);
+    }
+
+    .table thead th {
+        white-space: nowrap;
+    }
+
+    .progress.slim {
+        height: .5rem;
+    }
+
+    .card-soft {
+        border: 0;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+    }
+</style>
+
 <div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h4 mb-0">Admin Dashboard</h1>
-    <div class="btn-group">
-      <a class="btn btn-dark" asp-controller="AdminVenues" asp-action="Index">Manage Venues</a>
-      <a class="btn btn-outline-secondary" asp-controller="OrgReports" asp-action="Index">Organizer Reports</a>
-    </div>
-  </div>
 
-  <!-- KPI cards -->
-  <div class="row g-3 mb-3">
-    <div class="col-12 col-md-3">
-      <div class="card border-0 shadow-sm"><div class="card-body">
-        <div class="text-muted small">Users (All / Cust / Org / Admin)</div>
-        <div class="h5 mb-0">@Model.Kpi.UsersTotal / @Model.Kpi.UsersCustomers / @Model.Kpi.UsersOrganizers / @Model.Kpi.UsersAdmins</div>
-      </div></div>
-    </div>
-    <div class="col-12 col-md-3">
-      <div class="card border-0 shadow-sm"><div class="card-body">
-        <div class="text-muted small">Events (Live / Upcoming / Completed / Cancelled)</div>
-        <div class="h5 mb-0">@Model.Kpi.EventsLive / @Model.Kpi.EventsUpcoming / @Model.Kpi.EventsCompleted / @Model.Kpi.EventsCancelled</div>
-      </div></div>
-    </div>
-    <div class="col-12 col-md-3">
-      <div class="card border-0 shadow-sm"><div class="card-body">
-        <div class="text-muted small">Venues (Active / Total)</div>
-        <div class="h5 mb-0">@Model.Kpi.VenuesActive / @Model.Kpi.VenuesTotal</div>
-      </div></div>
-    </div>
-    <div class="col-12 col-md-3">
-      <div class="card border-0 shadow-sm"><div class="card-body">
-        <div class="text-muted small">Lifetime Revenue</div>
-        <div class="h5 mb-0">LKR @Model.Kpi.RevenueLifetime.ToString("N0")</div>
-        <div class="small text-muted">Tickets: @Model.Kpi.TicketsSoldLifetime</div>
-      </div></div>
-    </div>
-  </div>
-
-  <div class="row g-3">
-    <!-- Top events by revenue -->
-    <div class="col-12 col-lg-6">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <div class="h6 mb-0">Top Events (by Revenue)</div>
-            <a class="btn btn-sm btn-outline-secondary" asp-controller="Events" asp-action="Index">View All</a>
-          </div>
-          <div class="table-responsive">
-            <table class="table align-middle">
-              <thead>
-                <tr>
-                  <th>Event</th>
-                  <th>Status</th>
-                  <th class="text-end">Sold/Total</th>
-                  <th class="text-end">Price</th>
-                  <th class="text-end">Revenue</th>
-                </tr>
-              </thead>
-              <tbody>
-              @foreach (var e in Model.TopEvents)
-              {
-                <tr>
-                  <td>@e.Title<br /><span class="text-muted small">@e.OrganizerName</span></td>
-                  <td><span class="badge text-bg-@Badge(e.Status)">@e.Status</span></td>
-                  <td class="text-end">@e.Sold / @e.Total</td>
-                  <td class="text-end">LKR @e.Price.ToString("N0")</td>
-                  <td class="text-end fw-semibold">LKR @e.Revenue.ToString("N0")</td>
-                </tr>
-              }
-              </tbody>
-            </table>
-          </div>
-          @if (Model.TopEvents.Count == 0)
-          { <div class="alert alert-light border-0">No events yet.</div> }
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <h1 class="h4 mb-0">Admin Dashboard</h1>
+            <div class="text-muted small">System overview &amp; latest activity</div>
         </div>
-      </div>
+        <div class="btn-group gap-2">
+            <a class="btn btn-dark" asp-controller="AdminVenues" asp-action="Index">Manage Venues</a>
+            <a class="btn btn-outline-secondary" asp-controller="Admin" asp-action="Index">Refresh</a>
+        </div>
     </div>
 
-    <!-- Recent bookings -->
-    <div class="col-12 col-lg-6">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="h6 mb-2">Recent Bookings</div>
-          <div class="table-responsive">
-            <table class="table align-middle">
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Customer</th>
-                  <th>Event</th>
-                  <th class="text-end">Tickets</th>
-                  <th class="text-end">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-              @foreach (var b in Model.RecentBookings)
-              {
-                <tr>
-                  <td>@b.BookedAt.ToString("dd MMM, h:mm tt")</td>
-                  <td>@b.CustomerName</td>
-                  <td>@b.EventTitle</td>
-                  <td class="text-end">@b.TicketCount</td>
-                  <td class="text-end">LKR @b.TotalAmount.ToString("N0")</td>
-                </tr>
-              }
-              </tbody>
-            </table>
-          </div>
-          @if (Model.RecentBookings.Count == 0)
-          { <div class="alert alert-light border-0">No bookings yet.</div> }
+    <!-- KPI cards -->
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-md-3">
+            <div class="card card-soft kpi-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-accent">👤</div>
+                    <div>
+                        <div class="text-muted small">Users</div>
+                        <div class="big">@K(Model.Kpi.UsersTotal)</div>
+                        <div class="text-muted small">Cust @K(Model.Kpi.UsersCustomers) • Org
+                            @K(Model.Kpi.UsersOrganizers) • Adm @K(Model.Kpi.UsersAdmins)</div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <div class="col-12 col-md-3">
+            <div class="card card-soft kpi-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-accent">🎫</div>
+                    <div>
+                        <div class="text-muted small">Events</div>
+                        <div class="big">@K(Model.Kpi.EventsTotal)</div>
+                        <div class="text-muted small">
+                            <span class="badge text-bg-success">Live @K(Model.Kpi.EventsLive)</span>
+                            <span class="badge text-bg-secondary">Upc @K(Model.Kpi.EventsUpcoming)</span>
+                            <span class="badge text-bg-dark">Done @K(Model.Kpi.EventsCompleted)</span>
+                            <span class="badge text-bg-danger">Cncl @K(Model.Kpi.EventsCancelled)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <div class="card card-soft kpi-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-accent">📍</div>
+                    <div>
+                        <div class="text-muted small">Venues</div>
+                        <div class="big">@K(Model.Kpi.VenuesActive) / @K(Model.Kpi.VenuesTotal)</div>
+                        <div class="text-muted small">Active / Total</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <div class="card card-soft kpi-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-accent">💰</div>
+                    <div>
+                        <div class="text-muted small">Lifetime Revenue</div>
+                        <div class="big">@Money(Model.Kpi.RevenueLifetime)</div>
+                        <div class="text-muted small">Tickets @K(Model.Kpi.TicketsSoldLifetime)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
+
+    <!-- Two columns -->
+    <div class="row g-3">
+        <!-- Top events by revenue -->
+        <div class="col-12">
+            <div class="card card-soft h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="h6 mb-0">Top Events (by Revenue)</div>
+                        <a class="btn btn-sm btn-outline-secondary" asp-controller="Events" asp-action="Index">View
+                            All</a>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Sold / Total</th>
+                                    <th class="text-end">Price</th>
+                                    <th class="text-end">Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.TopEvents.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="5">
+                                            <div class="alert alert-light border-0 mb-0">No events yet.</div>
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var e in Model.TopEvents)
+                                    {
+                                        var pct = e.Total > 0 ? Math.Clamp((int)Math.Round(100.0 * e.Sold / (double)e.Total), 0,
+                                        100) : 0;
+                                        <tr>
+                                            <td>
+                                                <div class="fw-semibold">@e.Title</div>
+                                                <div class="text-muted small">@e.OrganizerName</div>
+                                            </td>
+                                            <td><span class="badge text-bg-@Badge(e.Status)">@e.Status</span></td>
+                                            <td class="text-end">
+                                                @e.Sold / @e.Total
+                                                <div class="progress slim mt-1">
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width:@pct%">
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-end">@Money(e.Price)</td>
+                                            <td class="text-end fw-semibold">@Money(e.Revenue)</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent bookings -->
+        <div class="col-12 ">
+            <div class="card card-soft h-100">
+                <div class="card-body">
+                    <div class="h6 mb-2">Recent Bookings</div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Customer</th>
+                                    <th>Event</th>
+                                    <th class="text-end">Tickets</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.RecentBookings.Count == 0)
+                                {
+                                    <tr>
+                                        <td colspan="5">
+                                            <div class="alert alert-light border-0 mb-0">No bookings yet.</div>
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var b in Model.RecentBookings)
+                                    {
+                                        <tr>
+                                            <td class="text-nowrap">@b.BookedAt.ToString("dd MMM, h:mm tt")</td>
+                                            <td>@b.CustomerName</td>
+                                            <td class="text-truncate" style="max-width: 220px;" title="@b.EventTitle">
+                                                @b.EventTitle</td>
+                                            <td class="text-end">@b.TicketCount</td>
+                                            <td class="text-end">@Money(b.TotalAmount)</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
