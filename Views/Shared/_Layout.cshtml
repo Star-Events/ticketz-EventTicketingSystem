@@ -75,16 +75,15 @@
                                         Admin
                                     </a>
                                     <ul class="dropdown-menu" aria-labelledby="adminMenu">
-                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Dashboard">Dashboard</a>
+                                        <li class="nav-item">
+                                            <a class="nav-link" asp-controller="Admin" asp-action="Index">Dashboard</a>
                                         </li>
-                                        <li><a class="dropdown-item" asp-controller="AdminUsers" asp-action="Index">Users</a>
+                                        <li class="nav-item">
+                                            <a class="nav-link" asp-controller="AdminVenues" asp-action="Index">Venues</a>
                                         </li>
-                                        <li><a class="dropdown-item" asp-controller="AdminVenues" asp-action="Index">Venues</a>
+                                        <li class="nav-item">
+                                            <a class="nav-link" asp-controller="AdminReports" asp-action="Index">Reports</a>
                                         </li>
-                                        <li><a class="dropdown-item" asp-controller="AdminDiscounts"
-                                                asp-action="Index">Discounts</a></li>
-                                        <li><a class="dropdown-item" asp-controller="AdminReports"
-                                                asp-action="Index">Reports</a></li>
                                     </ul>
                                 </li>
                             }
