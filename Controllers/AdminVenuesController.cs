@@ -182,5 +182,45 @@ namespace EventTicketingSystem.Controllers
             TempData["AdminVenueMsg"] = "Venue deleted.";
             return RedirectToAction("Index");
         }
+
+
+        // GET: /AdminVenues/Create
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return View(new EditVenueVm { IsActive = true });
+        }
+
+        // POST: /AdminVenues/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Create(EditVenueVm vm)
+        {
+            if (string.IsNullOrWhiteSpace(vm.Name))
+                ModelState.AddModelError("Name", "Name is required.");
+            if (vm.Capacity < 1)
+                ModelState.AddModelError("Capacity", "Capacity must be at least 1.");
+
+            if (!ModelState.IsValid) return View(vm);
+
+            using var conn = _db.GetConnection();
+            conn.Open();
+
+            // Admin-created venues use created_by = NULL so all organizers can see them
+            using var cmd = new NpgsqlCommand(@"
+                INSERT INTO venue (name, address, capacity, is_active, created_by, updated_at)
+                VALUES (@name, @addr, @cap, @act, NULL, now());
+            ", conn);
+
+            cmd.Parameters.AddWithValue("name", vm.Name);
+            cmd.Parameters.AddWithValue("addr", (object?)vm.Address ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("cap", vm.Capacity);
+            cmd.Parameters.AddWithValue("act", vm.IsActive);
+
+            cmd.ExecuteNonQuery();
+
+            TempData["AdminVenueMsg"] = "Venue created.";
+            return RedirectToAction("Index");
+        }
     }
 }
