@@ -1,0 +1,124 @@
+@model EventTicketingSystem.Models.AdminDashboardVm
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    string Badge(string s) => s?.ToLower() switch {
+        "live" => "success", "upcoming" => "secondary",
+        "completed" => "dark", "cancelled" => "danger", _ => "secondary"
+    };
+}
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">Admin Dashboard</h1>
+    <div class="btn-group">
+      <a class="btn btn-dark" asp-controller="AdminVenues" asp-action="Index">Manage Venues</a>
+      <a class="btn btn-outline-secondary" asp-controller="OrgReports" asp-action="Index">Organizer Reports</a>
+    </div>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-3">
+      <div class="card border-0 shadow-sm"><div class="card-body">
+        <div class="text-muted small">Users (All / Cust / Org / Admin)</div>
+        <div class="h5 mb-0">@Model.Kpi.UsersTotal / @Model.Kpi.UsersCustomers / @Model.Kpi.UsersOrganizers / @Model.Kpi.UsersAdmins</div>
+      </div></div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card border-0 shadow-sm"><div class="card-body">
+        <div class="text-muted small">Events (Live / Upcoming / Completed / Cancelled)</div>
+        <div class="h5 mb-0">@Model.Kpi.EventsLive / @Model.Kpi.EventsUpcoming / @Model.Kpi.EventsCompleted / @Model.Kpi.EventsCancelled</div>
+      </div></div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card border-0 shadow-sm"><div class="card-body">
+        <div class="text-muted small">Venues (Active / Total)</div>
+        <div class="h5 mb-0">@Model.Kpi.VenuesActive / @Model.Kpi.VenuesTotal</div>
+      </div></div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card border-0 shadow-sm"><div class="card-body">
+        <div class="text-muted small">Lifetime Revenue</div>
+        <div class="h5 mb-0">LKR @Model.Kpi.RevenueLifetime.ToString("N0")</div>
+        <div class="small text-muted">Tickets: @Model.Kpi.TicketsSoldLifetime</div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Top events by revenue -->
+    <div class="col-12 col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="h6 mb-0">Top Events (by Revenue)</div>
+            <a class="btn btn-sm btn-outline-secondary" asp-controller="Events" asp-action="Index">View All</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Event</th>
+                  <th>Status</th>
+                  <th class="text-end">Sold/Total</th>
+                  <th class="text-end">Price</th>
+                  <th class="text-end">Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+              @foreach (var e in Model.TopEvents)
+              {
+                <tr>
+                  <td>@e.Title<br /><span class="text-muted small">@e.OrganizerName</span></td>
+                  <td><span class="badge text-bg-@Badge(e.Status)">@e.Status</span></td>
+                  <td class="text-end">@e.Sold / @e.Total</td>
+                  <td class="text-end">LKR @e.Price.ToString("N0")</td>
+                  <td class="text-end fw-semibold">LKR @e.Revenue.ToString("N0")</td>
+                </tr>
+              }
+              </tbody>
+            </table>
+          </div>
+          @if (Model.TopEvents.Count == 0)
+          { <div class="alert alert-light border-0">No events yet.</div> }
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent bookings -->
+    <div class="col-12 col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="h6 mb-2">Recent Bookings</div>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Customer</th>
+                  <th>Event</th>
+                  <th class="text-end">Tickets</th>
+                  <th class="text-end">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+              @foreach (var b in Model.RecentBookings)
+              {
+                <tr>
+                  <td>@b.BookedAt.ToString("dd MMM, h:mm tt")</td>
+                  <td>@b.CustomerName</td>
+                  <td>@b.EventTitle</td>
+                  <td class="text-end">@b.TicketCount</td>
+                  <td class="text-end">LKR @b.TotalAmount.ToString("N0")</td>
+                </tr>
+              }
+              </tbody>
+            </table>
+          </div>
+          @if (Model.RecentBookings.Count == 0)
+          { <div class="alert alert-light border-0">No bookings yet.</div> }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
