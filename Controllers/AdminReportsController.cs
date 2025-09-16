@@ -41,8 +41,11 @@ namespace EventTicketingSystem.Controllers
                 FROM booking b
                 WHERE b.booked_at >= @from AND b.booked_at < @to;", conn))
             {
-                cmd.Parameters.AddWithValue("from", new DateTimeOffset(fromLocal, TimeSpan.Zero));
-                cmd.Parameters.AddWithValue("to", new DateTimeOffset(toLocalExclusive, TimeSpan.Zero));
+                var fromUtc = new DateTimeOffset(fromLocal, TimeZoneInfo.Local.GetUtcOffset(fromLocal)).ToUniversalTime();
+                var toUtc = new DateTimeOffset(toLocalExclusive, TimeZoneInfo.Local.GetUtcOffset(toLocalExclusive)).ToUniversalTime();
+
+                cmd.Parameters.AddWithValue("from", fromUtc);
+                cmd.Parameters.AddWithValue("to", toUtc);
 
                 using var r = cmd.ExecuteReader();
                 if (r.Read())
