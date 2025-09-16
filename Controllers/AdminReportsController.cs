@@ -71,8 +71,11 @@ namespace EventTicketingSystem.Controllers
                 GROUP BY e.organizer_id, u.full_name
                 ORDER BY revenue DESC, tickets DESC;", conn))
             {
-                cmd.Parameters.AddWithValue("from", new DateTimeOffset(fromLocal, TimeSpan.Zero));
-                cmd.Parameters.AddWithValue("to", new DateTimeOffset(toLocalExclusive, TimeSpan.Zero));
+                var fromUtc = new DateTimeOffset(fromLocal, TimeZoneInfo.Local.GetUtcOffset(fromLocal)).ToUniversalTime();
+                var toUtc = new DateTimeOffset(toLocalExclusive, TimeZoneInfo.Local.GetUtcOffset(toLocalExclusive)).ToUniversalTime();
+
+                cmd.Parameters.AddWithValue("from", fromUtc);
+                cmd.Parameters.AddWithValue("to", toUtc);
 
                 using var r = cmd.ExecuteReader();
                 while (r.Read())
@@ -105,8 +108,11 @@ namespace EventTicketingSystem.Controllers
                 GROUP BY e.event_id, e.title, u.full_name, e.status, e.ticket_price, e.starts_at
                 ORDER BY revenue DESC, tickets DESC, e.starts_at DESC;", conn))
             {
-                cmd.Parameters.AddWithValue("from", new DateTimeOffset(fromLocal, TimeSpan.Zero));
-                cmd.Parameters.AddWithValue("to", new DateTimeOffset(toLocalExclusive, TimeSpan.Zero));
+                var fromUtc = new DateTimeOffset(fromLocal, TimeZoneInfo.Local.GetUtcOffset(fromLocal)).ToUniversalTime();
+                var toUtc = new DateTimeOffset(toLocalExclusive, TimeZoneInfo.Local.GetUtcOffset(toLocalExclusive)).ToUniversalTime();
+
+                cmd.Parameters.AddWithValue("from", fromUtc);
+                cmd.Parameters.AddWithValue("to", toUtc);
 
                 using var r = cmd.ExecuteReader();
                 while (r.Read())
@@ -153,8 +159,11 @@ namespace EventTicketingSystem.Controllers
                 GROUP BY e.event_id, e.title, u.full_name, e.status, e.ticket_price, e.starts_at
                 ORDER BY revenue DESC, tickets DESC, e.starts_at DESC;", conn);
 
-            cmd.Parameters.AddWithValue("from", new DateTimeOffset(fromLocal, TimeSpan.Zero));
-            cmd.Parameters.AddWithValue("to", new DateTimeOffset(toLocalExclusive, TimeSpan.Zero));
+            var fromUtc = new DateTimeOffset(fromLocal, TimeZoneInfo.Local.GetUtcOffset(fromLocal)).ToUniversalTime();
+            var toUtc = new DateTimeOffset(toLocalExclusive, TimeZoneInfo.Local.GetUtcOffset(toLocalExclusive)).ToUniversalTime();
+
+            cmd.Parameters.AddWithValue("from", fromUtc);
+            cmd.Parameters.AddWithValue("to", toUtc);
 
             using var r = cmd.ExecuteReader();
             while (r.Read())
