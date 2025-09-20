@@ -1,0 +1,81 @@
+@model EventTicketingSystem.Models.CreateEventVm
+@{
+    ViewData["Title"] = "Edit Event (Admin)";
+    var eid = (int)ViewBag.EventId;
+    var currentStatus = ViewBag.CurrentStatus as string ?? "Upcoming";
+}
+<div class="container py-4" style="max-width:860px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">Edit Event (Admin)</h1>
+        <a class="btn btn-outline-secondary" asp-action="Index">Back</a>
+    </div>
+
+    <div class="alert alert-light border">
+        Current status: <span class="badge text-bg-secondary">@currentStatus</span>
+    </div>
+
+    <form method="post">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="mb-3">
+            <label asp-for="Title" class="form-label"></label>
+            <input asp-for="Title" class="form-control" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label"></label>
+            <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Category</label>
+                <select asp-for="CategoryId" class="form-select">
+                    <option value="0">-- Select --</option>
+                    @foreach (var c in (IEnumerable<EventTicketingSystem.Controllers.CategoryItem>)ViewBag.Categories)
+                    {
+                        <option value="@c.CategoryId">@c.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="CategoryId" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="StartsAt" class="form-label"></label>
+                <input asp-for="StartsAt" type="datetime-local" class="form-control" />
+                <span asp-validation-for="StartsAt" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+            <div class="col-md-6">
+                <label class="form-label">Venue</label>
+                <select asp-for="VenueId" class="form-select">
+                    @foreach (var v in (IEnumerable<EventTicketingSystem.Controllers.VenueItem>)ViewBag.Venues)
+                    {
+                        <option value="@v.VenueId">@v.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="VenueId" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="TicketPrice" class="form-label"></label>
+                <input asp-for="TicketPrice" type="number" step="0.01" min="0" class="form-control" />
+                <span asp-validation-for="TicketPrice" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="TotalTickets" class="form-label"></label>
+                <input asp-for="TotalTickets" type="number" min="1" class="form-control" />
+                <span asp-validation-for="TotalTickets" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+            <button class="btn btn-dark" type="submit">Save Changes</button>
+        </div>
+    </form>
+</div>

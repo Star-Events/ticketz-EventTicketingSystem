@@ -1,0 +1,149 @@
+@model IEnumerable<EventTicketingSystem.Models.AdminEventRow>
+@{
+    ViewData["Title"] = "All Events";
+    string status = ViewBag.Status as string ?? "All";
+    string? q = ViewBag.Q as string;
+    int page = (int)ViewBag.Page;
+    int pageSize = (int)ViewBag.PageSize;
+    int totalPages = (int)ViewBag.TotalPages;
+
+    string Badge(string s) => s?.ToLower() switch
+    {
+        "live" => "success",
+        "upcoming" => "secondary",
+        "completed" => "dark",
+        "cancelled" => "danger",
+        _ => "secondary"
+    };
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">All Events</h1>
+        <a class="btn btn-outline-secondary" asp-controller="Admin" asp-action="Index">Dashboard</a>
+    </div>
+
+    @if (TempData["AdminEventMsg"] is string msg)
+    {
+        <div class="alert alert-info">@msg</div>
+    }
+
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-12 col-md-4">
+            <input class="form-control" name="q" value="@q" placeholder="Search title, venue, organizer..." />
+        </div>
+        <div class="col-6 col-md-3">
+            <select name="status" class="form-select" onchange="this.form.submit()">
+                <option value="All" selected="@(status == "All")">All statuses</option>
+                <option value="Upcoming" selected="@(status == "Upcoming")">Upcoming</option>
+                <option value="Live" selected="@(status == "Live")">Live</option>
+                <option value="Completed" selected="@(status == "Completed")">Completed</option>
+                <option value="Cancelled" selected="@(status == "Cancelled")">Cancelled</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <select name="pageSize" class="form-select" onchange="this.form.submit()">
+                <option value="10" selected="@(pageSize == 10)">10 per page</option>
+                <option value="20" selected="@(pageSize == 20)">20 per page</option>
+                <option value="50" selected="@(pageSize == 50)">50 per page</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-3">
+            <button class="btn btn-dark w-100" type="submit">Filter</button>
+        </div>
+    </form>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Event</th>
+                        <th>Organizer</th>
+                        <th>Starts</th>
+                        <th>Status</th>
+                        <th class="text-end">Sold/Total</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6">
+                                <div class="alert alert-light border-0 mb-0">No events found.</div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var e in Model)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@e.Title<br /><span class="text-muted small">@e.Venue</span></td>
+                                <td>@e.OrganizerName</td>
+                                <td class="text-nowrap">@e.StartsAtLocal.ToString("dd MMM, h:mm tt")</td>
+                                <td><span class="badge text-bg-@Badge(e.Status)">@e.Status</span></td>
+                                <td class="text-end">@e.Sold / @e.Total</td>
+                                <td class="text-end">
+                                    <div class="btn-group gap-2">
+                                        <a class="btn btn-sm btn-outline-secondary" asp-action="Edit"
+                                            asp-route-id="@e.Id">Edit</a>
+
+                                        @* Status controls *@
+                                        @if (e.Status == "Upcoming")
+                                        {
+                                            <form method="post" asp-action="Publish" asp-route-id="@e.Id" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button class="btn btn-sm btn-outline-success">Publish</button>
+                                            </form>
+                                            <form method="post" asp-action="Cancel" asp-route-id="@e.Id" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button class="btn btn-sm btn-outline-danger">Cancel</button>
+                                            </form>
+                                        }
+                                        else if (e.Status == "Live")
+                                        {
+                                            <form method="post" asp-action="Unpublish" asp-route-id="@e.Id" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button class="btn btn-sm btn-outline-warning">Unpublish</button>
+                                            </form>
+                                            <form method="post" asp-action="Cancel" asp-route-id="@e.Id" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button class="btn btn-sm btn-outline-danger">Cancel</button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (totalPages > 1)
+    {
+        <nav class="mt-3">
+            <ul class="pagination">
+                @{
+                    var prev = page - 1;
+                    var next = page + 1;
+                }
+                <li class="page-item @(page == 1 ? "disabled" : "")">
+                    <a class="page-link" href="?page=@prev&pageSize=@pageSize&status=@status&q=@q">Previous</a>
+                </li>
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    <li class="page-item @(i == page ? "active" : "")">
+                        <a class="page-link" href="?page=@i&pageSize=@pageSize&status=@status&q=@q">@i</a>
+                    </li>
+                }
+                <li class="page-item @(page == totalPages ? "disabled" : "")">
+                    <a class="page-link" href="?page=@next&pageSize=@pageSize&status=@status&q=@q">Next</a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
