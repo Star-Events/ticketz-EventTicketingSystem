@@ -36,52 +36,49 @@
       <p class="mb-4">@Model.Description</p>
     </div>
     <div class="col-lg-4">
+
+
       <div class="card border-0 shadow-sm">
         <div class="card-body">
           <div class="mb-2">Price</div>
           <div class="h4">LKR @Model.TicketPrice.ToString("N0")</div>
+
           <div class="small text-muted mb-3">
             Available: @(Model.TotalTickets - Model.SoldCount) / @Model.TotalTickets
           </div>
 
           @if (Model.CanBuy)
           {
-            <a class="btn btn-dark w-100" asp-controller="Checkout" asp-action="Start" asp-route-id="@Model.EventId">
-              Book Now
-            </a>
-            <div class="small text-muted mt-2">Sales are open.</div>
+            <a class="btn btn-dark w-100" asp-controller="Checkout" asp-action="Start" asp-route-id="@Model.EventId">Book
+              Now</a>
           }
           else
           {
-            <button class="btn btn-dark w-100" type="button" disabled>Book Now</button>
-            <div class="small text-muted mt-2">
-              @if (Model.Status.Equals("Upcoming", StringComparison.OrdinalIgnoreCase))
+            <button class="btn btn-secondary w-100" disabled>Not Available</button>
+          }
+
+          <hr class="my-3" />
+
+          <div class="small text-muted">Organizer</div>
+          <div class="fw-semibold mb-1">@Model.OrganizerName</div>
+
+          @if (!string.IsNullOrWhiteSpace(Model.OrganizerPhone) || !string.IsNullOrWhiteSpace(Model.OrganizerEmail))
+          {
+            <div class="small">
+              @if (!string.IsNullOrWhiteSpace(Model.OrganizerPhone))
               {
-                <span>Ticket sales have not started yet.</span>
+                <div>📞 @Model.OrganizerPhone</div>
               }
-              else if (Model.Status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase))
+              @if (!string.IsNullOrWhiteSpace(Model.OrganizerEmail))
               {
-                <span>This event has been cancelled.</span>
-              }
-              else if (Model.Status.Equals("Completed", StringComparison.OrdinalIgnoreCase))
-              {
-                <span>This event has ended.</span>
-              }
-              else
-              {
-                <span>Sales are not available for this event.</span>
+                <div>✉️ <a href="mailto:@Model.OrganizerEmail">@Model.OrganizerEmail</a></div>
               }
             </div>
           }
-          <div class="small text-muted mb-3">
-            Available: @(Model.Remaining) / @Model.TotalTickets
-            @if (Model.Remaining <= 0)
-            {
-              <span class="badge text-bg-dark ms-2">Sold out</span>
-            }
-          </div>
-          <div class="small text-muted mt-3">Organizer: @Model.OrganizerName</div>
-
+          else
+          {
+            <div class="small text-muted">No contact details provided.</div>
+          }
         </div>
       </div>
     </div>

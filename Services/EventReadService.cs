@@ -98,12 +98,12 @@ namespace EventTicketingSystem.Services
 
             using var cmd = new NpgsqlCommand(@"
                 SELECT
-                  e.event_id, e.title, COALESCE(e.description,''), 
-                  COALESCE(ec.name,'Uncategorized') AS category_name,
-                  e.starts_at, e.ticket_price, e.total_tickets, e.sold_count,
-                  v.name AS venue_name, u.full_name AS organizer_name,
-                  e.status,
-                  e.image_path
+                e.event_id, e.title, COALESCE(e.description,'') AS description,
+                COALESCE(ec.name,'Uncategorized') AS category_name,
+                e.starts_at, e.ticket_price, e.total_tickets, e.sold_count,
+                v.name AS venue_name, u.full_name AS organizer_name,
+                e.status, e.image_path,
+                u.email AS organizer_email, u.phone_number AS organizer_phone
                 FROM event e
                 JOIN venue v ON v.venue_id = e.venue_id
                 JOIN users u ON u.user_id = e.organizer_id
@@ -116,20 +116,25 @@ namespace EventTicketingSystem.Services
             using var r = cmd.ExecuteReader();
             if (!r.Read()) return null;
 
+            int ix(string name) => r.GetOrdinal(name);
+
+
             return new EventDetailsVm
             {
-                EventId = r.GetInt32(0),
-                Title = r.GetString(1),
-                Description = r.GetString(2),
-                Category = r.GetString(3),
-                StartsAt = r.GetFieldValue<DateTimeOffset>(4),
-                TicketPrice = r.GetDecimal(5),
-                TotalTickets = r.GetInt32(6),
-                SoldCount = r.GetInt32(7),
-                Venue = r.GetString(8),
-                OrganizerName = r.GetString(9),
-                Status = r.GetString(10),
-                ImagePath = r.IsDBNull(11) ? null : r.GetString(11)
+                EventId = r.GetInt32(ix("event_id")),
+                Title = r.GetString(ix("title")),
+                Description = r.GetString(ix("description")),
+                Category = r.GetString(ix("category_name")),
+                StartsAt = r.GetFieldValue<DateTimeOffset>(ix("starts_at")),
+                TicketPrice = r.GetDecimal(ix("ticket_price")),
+                TotalTickets = r.GetInt32(ix("total_tickets")),
+                SoldCount = r.GetInt32(ix("sold_count")),
+                Venue = r.GetString(ix("venue_name")),
+                OrganizerName = r.GetString(ix("organizer_name")),
+                Status = r.GetString(ix("status")),
+                ImagePath = r.IsDBNull(ix("image_path")) ? null : r.GetString(ix("image_path")),
+                OrganizerEmail = r.IsDBNull(ix("organizer_email")) ? null : r.GetString(ix("organizer_email")),
+                OrganizerPhone = r.IsDBNull(ix("organizer_phone")) ? null : r.GetString(ix("organizer_phone"))
             };
         }
 
