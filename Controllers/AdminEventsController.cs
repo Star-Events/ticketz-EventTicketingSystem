@@ -286,6 +286,134 @@ namespace EventTicketingSystem.Controllers
             return RedirectToAction("Index");
         }
 
+        // ---------- DELETE (GET) ----------
+        [HttpGet]
+        public IActionResult Delete(int id)
+        {
+            using var conn = _db.GetConnection();
+            conn.Open();
+
+            using var cmd = new NpgsqlCommand(@"
+                SELECT e.event_id, e.title, e.status,
+                       (SELECT COUNT(*) FROM booking b WHERE b.event_id = e.event_id) AS booking_count,
+                       (SELECT COUNT(*) FROM booking_ticket bt
+                          JOIN booking b2 ON b2.booking_id = bt.booking_id
+                         WHERE b2.event_id = e.event_id) AS ticket_count
+                FROM event e
+                WHERE e.event_id = @id
+                LIMIT 1;", conn);
+            cmd.Parameters.AddWithValue("id", id);
+
+            using var r = cmd.ExecuteReader();
+            if (!r.Read()) return NotFound();
+
+            var vm = new AdminEventRow
+            {
+                Id = r.GetInt32(0),
+                Title = r.GetString(1),
+                Status = r.GetString(2)
+            };
+            ViewBag.BookingCount = r.GetInt32(3);
+            ViewBag.TicketCount = r.GetInt32(4);
+
+            return View(vm);
+        }
+
+        // ---------- DELETE (POST) ----------
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteConfirmed(int id)
+        {
+            using var conn = _db.GetConnection();
+            conn.Open();
+            using var tx = conn.BeginTransaction();
+
+            try
+            {
+                // Only allow for Cancelled/Completed
+                string? status = null;
+                using (var st = new NpgsqlCommand("SELECT status FROM event WHERE event_id=@id;", conn, tx))
+                {
+                    st.Parameters.AddWithValue("id", id);
+                    var obj = st.ExecuteScalar();
+                    if (obj is null) { tx.Rollback(); return NotFound(); }
+                    status = Convert.ToString(obj);
+                }
+                if (!string.Equals(status, "Cancelled", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(status, "Completed", StringComparison.OrdinalIgnoreCase))
+                {
+                    tx.Rollback();
+                    TempData["AdminEventMsg"] = "Only Cancelled or Completed events can be deleted.";
+                    return RedirectToAction("Index");
+                }
+
+                // 1) booking_ticket → by booking_id
+                using (var delBT = new NpgsqlCommand(@"
+                    DELETE FROM booking_ticket
+                    WHERE booking_id IN (SELECT booking_id FROM booking WHERE event_id=@id);", conn, tx))
+                {
+                    delBT.Parameters.AddWithValue("id", id);
+                    delBT.ExecuteNonQuery();
+                }
+
+                // 2) bookings for this event
+                using (var delB = new NpgsqlCommand("DELETE FROM booking WHERE event_id=@id;", conn, tx))
+                {
+                    delB.Parameters.AddWithValue("id", id);
+                    delB.ExecuteNonQuery();
+                }
+
+                // 3) delete event (and optionally remove image file)
+                string? imagePath = null;
+                using (var imgCmd = new NpgsqlCommand("SELECT image_path FROM event WHERE event_id=@id;", conn, tx))
+                {
+                    imgCmd.Parameters.AddWithValue("id", id);
+                    var o = imgCmd.ExecuteScalar();
+                    if (o != null && o != DBNull.Value) imagePath = (string)o;
+                }
+
+                using (var delE = new NpgsqlCommand("DELETE FROM event WHERE event_id=@id;", conn, tx))
+                {
+                    delE.Parameters.AddWithValue("id", id);
+                    var rows = delE.ExecuteNonQuery();
+                    if (rows == 0)
+                    {
+                        tx.Rollback();
+                        TempData["AdminEventMsg"] = "Delete failed.";
+                        return RedirectToAction("Index");
+                    }
+                }
+
+                tx.Commit();
+
+                // remove physical image after commit (best-effort)
+                if (!string.IsNullOrWhiteSpace(imagePath))
+                {
+                    try
+                    {
+                        // imagePath like "/uploads/events/file.jpg"
+                        var webRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                        var full = Path.Combine(webRoot, imagePath.TrimStart('/'));
+                        if (System.IO.File.Exists(full)) System.IO.File.Delete(full);
+
+                        // also try thumb if you follow a ".thumb" convention
+                        var thumb = full.Replace(".", ".thumb.");
+                        if (System.IO.File.Exists(thumb)) System.IO.File.Delete(thumb);
+                    }
+                    catch { /* ignore best-effort IO */ }
+                }
+
+                TempData["AdminEventMsg"] = "Event and related data deleted.";
+                return RedirectToAction("Index");
+            }
+            catch
+            {
+                try { tx.Rollback(); } catch { }
+                TempData["AdminEventMsg"] = "Could not delete event. Please try again.";
+                return RedirectToAction("Index");
+            }
+        }
+
         // ---------- helpers ----------
         private List<CategoryItem> GetCategories()
         {
@@ -314,5 +442,6 @@ namespace EventTicketingSystem.Controllers
                 list.Add(new VenueItem { VenueId = r.GetInt32(0), Name = r.GetString(1) });
             return list;
         }
+
     }
 }

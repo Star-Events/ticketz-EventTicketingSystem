@@ -1,0 +1,36 @@
+@model EventTicketingSystem.Models.AdminEventRow
+@{
+    ViewData["Title"] = "Delete Event";
+    var bookingCount = (int)(ViewBag.BookingCount ?? 0);
+    var ticketCount = (int)(ViewBag.TicketCount ?? 0);
+}
+
+<div class="container py-4" style="max-width:720px;">
+    <h1 class="h4 mb-3">Delete Event</h1>
+
+    <div class="mb-3">
+        <div class="fw-semibold">@Model.Title</div>
+        <div class="text-muted small">Status: @Model.Status</div>
+        <div class="text-muted small">Bookings attached: @bookingCount</div>
+        <div class="text-muted small">Tickets attached: @ticketCount</div>
+    </div>
+
+    @if (Model.Status is "Cancelled" or "Completed")
+    {
+        <div class="alert alert-danger">
+            This will permanently delete the event and any related bookings and tickets. This action cannot be undone.
+        </div>
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+            <button class="btn btn-danger" type="submit">Delete Event</button>
+        </form>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            Only <strong>Cancelled</strong> or <strong>Completed</strong> events can be deleted. Change the status first.
+        </div>
+        <a class="btn btn-outline-secondary" asp-action="Index">Back</a>
+    }
+</div>
