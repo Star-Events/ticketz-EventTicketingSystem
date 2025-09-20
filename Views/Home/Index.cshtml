@@ -1,17 +1,10 @@
-﻿@model IEnumerable<EventTicketingSystem.Models.EventCardVm>
+﻿@model EventTicketingSystem.Models.HomeVm
 @{
-    ViewData["Title"] = "Events";
+    ViewData["Title"] = "Home";
 }
 
 <section class="p-4 p-md-5 mb-4 bg-white rounded-3 shadow-lg mt-4">
     <div class="row align-items-center g-4">
-        <div class="col-md-12">
-            <div class="p-3 bg-dark text-white rounded-3">
-                <div class="small text-uppercase opacity-75">Promo</div>
-                <div class="h5 my-2">Use code <strong>ROCK10</strong> for 10% off</div>
-                <div class="small opacity-75">Limited time offer.</div>
-            </div>
-        </div>
         <div class="col-md-12 mt-4">
             <h1 class="display-6 fw-bold mb-2">Find your next event</h1>
             <p class="text-muted mb-4">Browse concerts, theatre, and cultural shows near you.</p>
@@ -36,29 +29,52 @@
     </div>
 </section>
 
-<section class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="h4 mb-0">Upcoming Events</h2>
-        <a class="btn btn-outline-secondary" asp-controller="Events" asp-action="Index">View all</a>
+<div class="container py-4">
+
+    <!-- Upcoming -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h5 mb-0">Upcoming Events</h2>
+        <a class="btn btn-sm btn-outline-secondary" asp-controller="Events" asp-action="Index"
+            asp-route-status="Upcoming">View all</a>
     </div>
 
-    @if (Model?.Any() ?? false)
+    @if (Model.Upcoming?.Any() == true)
     {
-        <div class="row g-3">
-            @foreach (var card in Model)
+        <div class="row g-3 mb-4">
+            @foreach (var e in Model.Upcoming)
             {
                 <div class="col-12 col-md-6">
-                    @await Component.InvokeAsync("EventCard", new { model = card })
-                    @* If you switched to a partial:
-             @await Html.PartialAsync("_EventCard", card) *@
+                    @await Component.InvokeAsync("EventCard", new { model = e })
                 </div>
             }
         </div>
     }
     else
     {
-        <div class="alert alert-light border-0 shadow-sm">
-            No upcoming events yet. Check back soon!
+        <div class="alert alert-light border-0">No upcoming events to show.</div>
+    }
+
+    <!-- Live -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h5 mb-0">Live Now</h2>
+        <a class="btn btn-sm btn-outline-secondary" asp-controller="Events" asp-action="Index"
+            asp-route-status="Live">View all</a>
+    </div>
+
+    @if (Model.Live?.Any() == true)
+    {
+        <div class="row g-3">
+            @foreach (var e in Model.Live)
+            {
+                <div class="col-12 col-md-6">
+                    @await Component.InvokeAsync("EventCard", new { model = e })
+                </div>
+            }
         </div>
     }
-</section>
+    else
+    {
+        <div class="alert alert-light border-0">No live events right now.</div>
+    }
+
+</div>
