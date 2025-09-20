@@ -10,7 +10,11 @@ namespace EventTicketingSystem.Services
         public EventReadService(DbHelper db) { _db = db; }
 
         public (IEnumerable<EventListItemVm> Items, int Total) GetPaged(
-            int page, int pageSize, string? q, DateTimeOffset? fromUtc, DateTimeOffset? toUtcExclusive)
+            int page, int pageSize, string? q,
+            DateTimeOffset? fromUtc,
+            DateTimeOffset? toUtcExclusive,
+            int? categoryId   // 👈 NEW
+            )
         {
             using var conn = _db.GetConnection();
             conn.Open();
@@ -21,40 +25,37 @@ namespace EventTicketingSystem.Services
             if (fromUtc.HasValue)
                 where.Add("e.starts_at >= @from");
             if (toUtcExclusive.HasValue)
-                where.Add("e.starts_at < @to"); // exclusive upper bound
+                where.Add("e.starts_at < @to"); // exclusive
+            if (categoryId.HasValue && categoryId.Value > 0)
+                where.Add("e.category_id = @cid"); // 👈 NEW
 
             var whereSql = where.Count > 0 ? "WHERE " + string.Join(" AND ", where) : "";
 
             // COUNT
-            using var count = new NpgsqlCommand($@"SELECT COUNT(*) FROM event e {whereSql};", conn);
+            using var count = new NpgsqlCommand($@"
+        SELECT COUNT(*) FROM event e {whereSql};", conn);
             if (!string.IsNullOrWhiteSpace(q)) count.Parameters.AddWithValue("q", $"%{q}%");
             if (fromUtc.HasValue) count.Parameters.AddWithValue("from", fromUtc.Value);
             if (toUtcExclusive.HasValue) count.Parameters.AddWithValue("to", toUtcExclusive.Value);
+            if (categoryId.HasValue && categoryId.Value > 0) count.Parameters.AddWithValue("cid", categoryId.Value);
             var total = Convert.ToInt32(count.ExecuteScalar());
 
-            // PAGE (NOTE: ordinals 0..9)
+            // PAGE
             using var cmd = new NpgsqlCommand($@"
-                SELECT
-                  e.event_id,                               -- 0
-                  e.title,                                  -- 1
-                  e.starts_at,                               -- 2
-                  e.ticket_price,                            -- 3
-                  e.total_tickets,                           -- 4
-                  e.sold_count,                              -- 5
-                  v.name AS venue_name,                      -- 6
-                  COALESCE(ec.name,'Uncategorized') AS category_name, -- 7 (not used here but fine)
-                  e.status,                                  -- 8
-                  e.image_thumb_path                         -- 9
-                FROM event e
-                JOIN venue v ON v.venue_id = e.venue_id
-                LEFT JOIN event_category ec ON ec.category_id = e.category_id
-                {whereSql}
-                ORDER BY e.starts_at ASC
-                LIMIT @ps OFFSET @off;", conn);
+                    SELECT
+                    e.event_id, e.title, e.starts_at, e.ticket_price, e.total_tickets, e.sold_count,
+                    v.name AS venue_name, COALESCE(ec.name,'Uncategorized') AS category_name
+                    FROM event e
+                    JOIN venue v ON v.venue_id = e.venue_id
+                    LEFT JOIN event_category ec ON ec.category_id = e.category_id
+                    {whereSql}
+                    ORDER BY e.starts_at ASC
+                    LIMIT @ps OFFSET @off;", conn);
 
             if (!string.IsNullOrWhiteSpace(q)) cmd.Parameters.AddWithValue("q", $"%{q}%");
             if (fromUtc.HasValue) cmd.Parameters.AddWithValue("from", fromUtc.Value);
             if (toUtcExclusive.HasValue) cmd.Parameters.AddWithValue("to", toUtcExclusive.Value);
+            if (categoryId.HasValue && categoryId.Value > 0) cmd.Parameters.AddWithValue("cid", categoryId.Value);
             cmd.Parameters.AddWithValue("ps", pageSize);
             cmd.Parameters.AddWithValue("off", (page - 1) * pageSize);
 
@@ -68,14 +69,10 @@ namespace EventTicketingSystem.Services
                 {
                     EventId = r.GetInt32(0),
                     Title = r.GetString(1),
-                    When = r.GetFieldValue<DateTimeOffset>(2).ToLocalTime()
-                                .ToString("ddd dd MMM yyyy, h:mm tt"),
+                    When = r.GetFieldValue<DateTimeOffset>(2).ToLocalTime().ToString("ddd dd MMM yyyy, h:mm tt"),
                     Price = $"LKR {r.GetDecimal(3):N0}",
                     Availability = $"{sold} / {totalTickets}",
-                    Venue = r.GetString(6),
-                    Status = r.IsDBNull(8) ? "Upcoming" : r.GetString(8),
-                    Remaining = totalTickets - sold,
-                    ImageThumbPath = r.IsDBNull(9) ? null : r.GetString(9)
+                    Venue = r.GetString(6)
                 });
             }
             return (items, total);
