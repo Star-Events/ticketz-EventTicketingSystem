@@ -31,8 +31,12 @@ namespace EventTicketingSystem.Controllers
 
         public IActionResult Index()
         {
-            var top2 = _events.GetUpcomingCards(2);
-            return View(top2);
+            var vm = new HomeVm
+            {
+                Upcoming = _events.GetUpcomingCards(2).ToList(),
+                Live = _events.GetLiveCards(2).ToList()
+            };
+            return View(vm);
         }
 
         public IActionResult Privacy() => View();
