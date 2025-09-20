@@ -89,7 +89,11 @@
                                     <div class="btn-group gap-2">
                                         <a class="btn btn-sm btn-outline-secondary" asp-action="Edit"
                                             asp-route-id="@e.Id">Edit</a>
-
+                                        @if (e.Status == "Cancelled" || e.Status == "Completed")
+                                        {
+                                            <a class="btn btn-sm btn-outline-danger" asp-action="Delete"
+                                                asp-route-id="@e.Id">Delete</a>
+                                        }
                                         @* Status controls *@
                                         @if (e.Status == "Upcoming")
                                         {
