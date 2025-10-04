@@ -1,0 +1,132 @@
+@model IEnumerable<EventTicketingSystem.Models.AdminUserRow>
+@{
+    ViewData["Title"] = "Manage Users";
+    int page = (int)ViewBag.Page;
+    int pageSize = (int)ViewBag.PageSize;
+    int totalPages = (int)ViewBag.TotalPages;
+    string? q = ViewBag.Q as string;
+    string role = (string)ViewBag.Role ?? "All";
+
+    string Badge(string s) => s?.ToLower() switch
+    {
+        "active" => "success",
+        "suspended" => "danger",
+        "inactive" => "secondary",
+        _ => "secondary"
+    };
+}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">Users</h1>
+        <a class="btn btn-outline-secondary" asp-controller="Admin" asp-action="Dashboard">Back to Dashboard</a>
+    </div>
+
+    @if (TempData["UsersMessage"] is string msg)
+    {
+        <div class="alert alert-info">@msg</div>
+    }
+
+    <form method="get" class="row g-2 align-items-end mb-3">
+        <div class="col-md-4">
+            <label class="form-label">Search</label>
+            <input class="form-control" name="q" value="@q" placeholder="Name or email..." />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Role</label>
+            <select name="role" class="form-select">
+                <option value="All" selected="@(role == "All")">All</option>
+                <option value="Customer" selected="@(role == "Customer")">Customer</option>
+                <option value="Organizer" selected="@(role == "Organizer")">Organizer</option>
+                <option value="Admin" selected="@(role == "Admin")">Admin</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Page size</label>
+            <select name="pageSize" class="form-select">
+                <option value="12" selected="@(pageSize == 12)">12</option>
+                <option value="24" selected="@(pageSize == 24)">24</option>
+                <option value="48" selected="@(pageSize == 48)">48</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">&nbsp;</label>
+            <button class="btn btn-dark w-100" type="submit">Apply</button>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Name / Email</th>
+                    <th>Phone</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">@u.FullName</div>
+                            <div class="text-muted small">@u.Email</div>
+                        </td>
+                        <td>@(u.Phone ?? "-")</td>
+                        <td>@u.Role</td>
+                        <td><span class="badge text-bg-@Badge(u.Status)">@u.Status</span></td>
+                        <td class="text-end">
+                            @if (!string.Equals(u.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (string.Equals(u.Status, "Suspended", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <form method="post" asp-action="Activate" asp-route-id="@u.UserId" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button class="btn btn-sm btn-success">Activate</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-action="Suspend" asp-route-id="@u.UserId" class="d-inline"
+                                        onsubmit="return confirm('Suspend this user?');">
+                                        @Html.AntiForgeryToken()
+                                        <button class="btn btn-sm btn-outline-danger">Suspend</button>
+                                    </form>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Admin</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (totalPages > 1)
+    {
+        <nav class="mt-3">
+            <ul class="pagination">
+                @{
+                    var prev = page - 1;
+                    var next = page + 1;
+                }
+                <li class="page-item @(page == 1 ? "disabled" : "")">
+                    <a class="page-link" href="?page=@prev&pageSize=@pageSize&q=@q&role=@role">Previous</a>
+                </li>
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    <li class="page-item @(i == page ? "active" : "")">
+                        <a class="page-link" href="?page=@i&pageSize=@pageSize&q=@q&role=@role">@i</a>
+                    </li>
+                }
+                <li class="page-item @(page == totalPages ? "disabled" : "")">
+                    <a class="page-link" href="?page=@next&pageSize=@pageSize&q=@q&role=@role">Next</a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
