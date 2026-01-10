@@ -1,8 +1,10 @@
 @model EventTicketingSystem.Models.CreateEventVm
 @{
     ViewData["Title"] = "Create Event";
-    var venues = (List<EventTicketingSystem.Controllers.VenueItem>)ViewBag.Venues;
-    var categories = (List<EventTicketingSystem.Controllers.CategoryItem>)ViewBag.Categories; // NEW
+    var venues = ViewBag.Venues as IEnumerable<EventTicketingSystem.Controllers.VenueItem>
+    ?? System.Array.Empty<EventTicketingSystem.Controllers.VenueItem>();
+    var categories = ViewBag.Categories as IEnumerable<EventTicketingSystem.Controllers.CategoryItem>
+    ?? System.Array.Empty<EventTicketingSystem.Controllers.CategoryItem>();
 }
 
 <div class="container py-4">
@@ -53,7 +55,9 @@
                         <label asp-for="StartsAt" class="form-label"></label>
                         <input asp-for="StartsAt" class="form-control" type="datetime-local"
                             value="@Model.StartsAt.ToString("yyyy-MM-ddTHH:mm")" />
-                        <span asp-validation-for="StartsAt" class="text-danger"></span>
+                        @* <span asp-validation-for="StartsAt" class="text-danger">
+                            Event date must be in the future
+                        </span>     *@
                     </div>
                 </div>
 
@@ -73,7 +77,8 @@
                     <div class="col-md-3 mb-3">
                         <label asp-for="TicketPrice" class="form-label"></label>
                         <input asp-for="TicketPrice" class="form-control" />
-                        <span asp-validation-for="TicketPrice" class="text-danger"></span>
+                        <span asp-validation-for="TicketPrice" class="text-danger">
+                        </span>
                     </div>
 
                     <div class="col-md-3 mb-3">

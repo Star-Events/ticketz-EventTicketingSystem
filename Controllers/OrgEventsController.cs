@@ -402,7 +402,7 @@ namespace EventTicketingSystem.Controllers
                 if (vm.TotalTickets > capacity)
                 {
                     ModelState.AddModelError("TotalTickets", $"Total tickets cannot exceed venue capacity ({capacity}).");
-                    tx.Rollback(); ViewBag.Venues = GetVenues(); return View(vm);
+                    tx.Rollback(); ViewBag.Venues = GetVenues(); ViewBag.Categories = GetCategories(); return View(vm);
                 }
 
                 // // 2) Insert the event (sold_count defaults to 0; status defaults to 'Upcoming')

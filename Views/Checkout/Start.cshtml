@@ -24,6 +24,7 @@
                                 <input id="quantityInput" name="Quantity" type="number" min="1" max="@Model.Remaining"
                                     value="@Model.Quantity" class="form-control" />
                                 <div class="form-text">@Model.Remaining remaining</div>
+                                <span asp-validation-for="Quantity" class="text-danger"></span>
                             </div>
                             <div class="col-6 col-md-4">
                                 <div>Total: <strong>LKR <span id="totalAmount">
