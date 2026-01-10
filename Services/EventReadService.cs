@@ -203,7 +203,7 @@ namespace EventTicketingSystem.Services
 
             using var cmd = new NpgsqlCommand(@"
                 SELECT e.event_id, e.title, e.starts_at, e.ticket_price, e.total_tickets, e.sold_count,
-                    v.name AS venue_name, e.status
+                    v.name AS venue_name, e.status, e.image_thumb_path
                 FROM event e
                 JOIN venue v ON v.venue_id = e.venue_id
                 WHERE e.status = 'Live' AND e.starts_at >= now()
@@ -229,7 +229,8 @@ namespace EventTicketingSystem.Services
                     Price = $"LKR {r.GetDecimal(3):N0}",
                     Availability = $"{sold} / {total}",
                     Status = r.GetString(7),
-                    Remaining = total - sold
+                    Remaining = total - sold,
+                    ImageThumbPath = r.IsDBNull(8) ? null : r.GetString(8)
                 });
             }
             return list;
